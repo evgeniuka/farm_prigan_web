@@ -1,0 +1,128 @@
+@import "tailwindcss";
+
+:root {
+  --cream-50: #f7f1e3;
+  --cream-100: #f2ead7;
+  --cream-200: #e9e2d3;
+  --ink: #2a1d14;
+  --muted: #6b5d4d;
+  --soft-border: #e9e2d3;
+  --terracotta: #b83c26;
+  --terracotta-dark: #9d351e;
+  --green: #6a8f4d;
+  --green-dark: #496d2d;
+  --mint: #eef6e5;
+  --gold: #e09f3e;
+  --danger: #9d342e;
+  --surface: #fbf7ee;
+  --white: #ffffff;
+  --shadow-soft: 0 18px 45px rgba(74, 51, 29, 0.12);
+  color: var(--ink);
+  background: var(--cream-50);
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 3px solid rgba(191, 69, 40, 0.35);
+  outline-offset: 3px;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+@layer components {
+  .app-shell {
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 80% 0%, rgba(224, 159, 62, 0.18), transparent 25rem),
+      radial-gradient(circle at 10% 5%, rgba(184, 60, 38, 0.1), transparent 18rem),
+      linear-gradient(180deg, #f7f1e3 0%, #f7f1e3 100%);
+  }
+
+  .page-band {
+    width: min(100%, 1536px);
+    margin: 0 auto;
+    padding: 0 clamp(1rem, 4vw, 8rem);
+  }
+
+  .panel {
+    border: 1px solid var(--soft-border);
+    border-radius: 8px;
+    background: rgba(255, 250, 240, 0.92);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .quiet-panel {
+    border: 1px solid var(--soft-border);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.56);
+  }
+
+  .soft-card {
+    border: 1px solid var(--soft-border);
+    border-radius: 8px;
+    background: var(--white);
+    box-shadow: 0 10px 28px rgba(74, 51, 29, 0.08);
+  }
+
+  .hero-visual {
+    position: relative;
+    min-height: 30rem;
+    overflow: hidden;
+    border: 1px solid #d8c5a6;
+    border-radius: 8px;
+    background:
+      radial-gradient(circle at 72% 18%, rgba(255, 220, 73, 0.86) 0 8%, transparent 9%),
+      radial-gradient(circle at 34% 26%, rgba(104, 151, 55, 0.96) 0 12%, transparent 13%),
+      radial-gradient(circle at 58% 42%, rgba(189, 49, 36, 0.94) 0 13%, transparent 14%),
+      radial-gradient(circle at 82% 54%, rgba(116, 52, 117, 0.86) 0 11%, transparent 12%),
+      radial-gradient(circle at 38% 70%, rgba(244, 135, 38, 0.92) 0 14%, transparent 15%),
+      linear-gradient(135deg, #30512b 0%, #5f8b38 42%, #352818 100%);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .pepper-visual {
+    min-height: 12rem;
+    border-radius: 8px;
+    background:
+      radial-gradient(circle at 34% 38%, var(--pepper-a, #d64a2f) 0 19%, transparent 20%),
+      radial-gradient(circle at 55% 34%, var(--pepper-b, #f2b33c) 0 18%, transparent 19%),
+      radial-gradient(circle at 48% 58%, var(--pepper-c, #7a9a35) 0 22%, transparent 23%),
+      linear-gradient(135deg, #294923, #eef2c6);
+  }
+
+  .map-label {
+    font-size: 12px;
+    font-weight: 700;
+    fill: #2c2119;
+  }
+
+  .map-muted {
+    font-size: 11px;
+    fill: #7a6e62;
+  }
+}
