@@ -1,17 +1,16 @@
 import { ArrowRight, Clock, Footprints, MapPin } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { getStop } from '../../data/helpers'
-import { mainRoute } from '../../data/routes'
+import { getRouteStops } from '../../data/helpers'
 import { useVisit } from '../../hooks/useVisit'
 import { StatusPill } from '../ui/StatusPill'
 
 export function StopTimeline({ compact = false }: { compact?: boolean }) {
   const { visit, setActiveStop } = useVisit()
-  const routeStops = mainRoute.stops.map(getStop)
+  const routeStops = getRouteStops(visit)
 
   return (
     <div className="space-y-3">
-      {routeStops.map((stop) => {
+      {routeStops.map((stop, index) => {
         const active = stop.id === visit.activeStopId
         const visited = visit.visitedStopIds.includes(stop.id)
         return (
@@ -19,7 +18,7 @@ export function StopTimeline({ compact = false }: { compact?: boolean }) {
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="min-w-0">
                 <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <StatusPill tone={active ? 'red' : visited ? 'green' : 'cream'}>{active ? 'Current' : visited ? 'Visited' : `Stop ${stop.order}`}</StatusPill>
+                  <StatusPill tone={active ? 'red' : visited ? 'green' : 'cream'}>{active ? 'Current' : visited ? 'Visited' : `Stop ${index + 1}`}</StatusPill>
                   <StatusPill tone="cream"><Clock size={12} /> {stop.durationMinutes} min</StatusPill>
                   <StatusPill tone="cream"><Footprints size={12} /> {stop.walkingMinutesFromPrevious} min walk</StatusPill>
                 </div>

@@ -15,6 +15,7 @@ import {
 import { type ReactNode, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { PageShell } from '../components/layout/PageShell'
+import { useMapOverlay } from '../components/map/useMapOverlay'
 import { getPepper } from '../data/helpers'
 import { compareImages, pepperImages } from '../data/pepperImages'
 import { peppers } from '../data/peppers'
@@ -63,6 +64,27 @@ const compareMeta: Record<string, {
     suitability: 'Advanced visitors only',
     topBadge: 'Strong heat',
   },
+}
+
+function getPepperRouteLabel(stopId: string) {
+  if (stopId === 'visitor-center') return 'Visitor Center'
+  if (stopId === 'greenhouse-route') return 'Greenhouse Route'
+  if (stopId === 'tasting-gh-1-2') return 'Tasting GH 1-2'
+  if (stopId === 'tasting-gh-3-4') return 'Tasting GH 3-4'
+  if (stopId === 'product-shop') return 'Product Shop'
+  return 'Farm route'
+}
+
+function getCompareMeta(pepper: Pepper) {
+  return compareMeta[pepper.id] ?? {
+    heatLabel: pepper.heatLevel <= 1 ? 'Mild' : pepper.heatLevel <= 3 ? 'Medium' : pepper.heatLevel === 4 ? 'Hot' : 'Very hot',
+    heatLevel: pepper.heatLevel,
+    origin: pepper.origin,
+    color: pepper.color,
+    route: getPepperRouteLabel(pepper.routeStopId),
+    caution: pepper.caution,
+    suitability: pepper.suitabilityTags.join(' · '),
+  }
 }
 
 function Card({ children, className }: { children: ReactNode; className?: string }) {
@@ -122,7 +144,8 @@ function SelectedPepperCard({
   onRemove: () => void
   onSave: () => void
 }) {
-  const meta = compareMeta[pepper.id]
+  const { openMap } = useMapOverlay()
+  const meta = getCompareMeta(pepper)
   const image = compareImages[pepper.id] ?? pepperImages[pepper.id]
   const flavorTags = pepper.flavorTags.slice(0, 3)
   const suitabilityTags = pepper.suitabilityTags.slice(0, pepper.id === 'habanero' ? 3 : 2)
@@ -178,7 +201,9 @@ function SelectedPepperCard({
         <div className="flex items-center gap-1.5 text-[12px] text-[#6b6359]">
           <MapPin size={12} />
           <span>{meta.route}</span>
-          <Link className="ml-auto font-semibold text-[var(--terracotta)] hover:underline" to="/map">Map ↗</Link>
+          <button className="ml-auto font-semibold text-[var(--terracotta)] hover:underline" onClick={() => openMap(pepper.routeStopId)} type="button">
+            Map
+          </button>
         </div>
 
         <div className="grid gap-2 pt-1">
@@ -206,14 +231,25 @@ function SelectedPepperCard({
 }
 
 function CompareTable({ selected }: { selected: Pepper[] }) {
+  const { openMap } = useMapOverlay()
   const rows: Array<{ label: string; render: (pepper: Pepper) => ReactNode }> = [
-    { label: 'Heat level', render: (pepper) => <div className="space-y-1"><p className="font-semibold">{compareMeta[pepper.id].heatLabel}</p><p className="text-[12px] text-[#6b6359]">{pepper.shuRange}</p></div> },
-    { label: 'Origin', render: (pepper) => compareMeta[pepper.id].origin },
-    { label: 'Color', render: (pepper) => compareMeta[pepper.id].color },
+    { label: 'Heat level', render: (pepper) => <div className="space-y-1"><p className="font-semibold">{getCompareMeta(pepper).heatLabel}</p><p className="text-[12px] text-[#6b6359]">{pepper.shuRange}</p></div> },
+    { label: 'Origin', render: (pepper) => getCompareMeta(pepper).origin },
+    { label: 'Color', render: (pepper) => getCompareMeta(pepper).color },
     { label: 'Flavor', render: (pepper) => <div className="flex flex-wrap gap-1.5">{pepper.flavorTags.slice(0, 3).map((tag) => <MiniBadge key={tag}>{tag}</MiniBadge>)}</div> },
-    { label: 'Suitability', render: (pepper) => compareMeta[pepper.id].suitability },
-    { label: 'Tasting caution', render: (pepper) => <span className={cn(pepper.id === 'habanero' || pepper.id === 'lemon-drop' ? 'text-[var(--terracotta)]' : 'text-[#4e8a5a]')}>{compareMeta[pepper.id].caution}</span> },
-    { label: 'Where to find it', render: (pepper) => <div className="space-y-1"><p>{compareMeta[pepper.id].route}</p><Link className="text-[12px] font-semibold text-[var(--terracotta)]" to="/map">Map ↗</Link></div> },
+    { label: 'Suitability', render: (pepper) => getCompareMeta(pepper).suitability },
+    { label: 'Tasting caution', render: (pepper) => <span className={cn(pepper.heatLevel >= 3 ? 'text-[var(--terracotta)]' : 'text-[#4e8a5a]')}>{getCompareMeta(pepper).caution}</span> },
+    {
+      label: 'Where to find it',
+      render: (pepper) => (
+        <div className="space-y-1">
+          <p>{getCompareMeta(pepper).route}</p>
+          <button className="text-[12px] font-semibold text-[var(--terracotta)]" onClick={() => openMap(pepper.routeStopId)} type="button">
+            Open map
+          </button>
+        </div>
+      ),
+    },
   ]
 
   return (
@@ -252,15 +288,17 @@ function CompareTable({ selected }: { selected: Pepper[] }) {
 
 export function ComparePage() {
   const { visit, toggleSavePepper, toggleComparePepper, removeComparedPepper, setActiveStop } = useVisit()
+  const { openMap } = useMapOverlay()
   const navigate = useNavigate()
   const [selectedIds, setSelectedIds] = useState<string[]>(() => {
-    const validIds = visit.comparedPepperIds.filter((id) => defaultCompareIds.includes(id))
+    const knownPepperIds = new Set(peppers.map((pepper) => pepper.id))
+    const validIds = visit.comparedPepperIds.filter((id) => knownPepperIds.has(id))
     return validIds.length ? validIds.slice(0, 3) : defaultCompareIds
   })
   const [query, setQuery] = useState('')
   const selected = useMemo(() => selectedIds.map(getPepper), [selectedIds])
-  const myVisitSelectedCount = Math.max(1, selectedIds.filter((id) => visit.savedPepperIds.includes(id)).length)
-  const mildCount = selectedIds.filter((id) => compareMeta[id]?.heatLabel === 'Mild').length
+  const myVisitSelectedCount = selectedIds.filter((id) => visit.savedPepperIds.includes(id)).length
+  const mildCount = selected.filter((pepper) => getCompareMeta(pepper).heatLabel === 'Mild').length
 
   function removePepper(id: string) {
     setSelectedIds((current) => current.filter((item) => item !== id))
@@ -309,14 +347,14 @@ export function ComparePage() {
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               <StatusChip active>{selectedIds.length} selected</StatusChip>
-              <StatusChip>{mildCount || 1} mild option</StatusChip>
+              <StatusChip>{mildCount} mild option</StatusChip>
               <StatusChip>2 available for tasting</StatusChip>
               <StatusChip>On your route</StatusChip>
               <StatusChip>Compare up to 3</StatusChip>
             </div>
           </header>
 
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,832px)_280px] lg:items-start">
+          <div className="grid gap-6 lg:grid-cols-1 lg:items-start">
             <main className="min-w-0 space-y-5">
               <section className="rounded-[8px] border border-[#c6ded8] bg-[#e1efeb] p-[18px] text-[#3e7f74]">
                 <div className="flex items-start justify-between gap-4">
@@ -431,7 +469,7 @@ export function ComparePage() {
               </section>
             </main>
 
-            <aside className="space-y-0 overflow-hidden rounded-[8px] border border-[#e8e1d3] bg-white shadow-[0_10px_24px_rgba(74,51,29,0.06)] lg:sticky lg:top-24">
+            <aside className="hidden space-y-0 overflow-hidden rounded-[8px] border border-[#e8e1d3] bg-white shadow-[0_10px_24px_rgba(74,51,29,0.06)] lg:sticky lg:top-24">
               <div className="border-b border-[#e8e1d3] p-4">
                 <h2 className="flex items-center gap-2 text-sm font-semibold text-[#3e7f74]"><Sparkles size={14} /> Fit for your visit</h2>
                 <div className="mt-3 flex items-start justify-between gap-3">
@@ -463,7 +501,7 @@ export function ComparePage() {
                   {selected.map((pepper) => (
                     <div className="flex items-center justify-between rounded-[8px] bg-[#fbf8f3] px-3 py-2 text-[13px]" key={pepper.id}>
                       <span className="font-medium text-[#6b6359]">{pepper.name}</span>
-                      <HeatDots level={compareMeta[pepper.id].heatLevel} compact />
+                      <HeatDots level={getCompareMeta(pepper).heatLevel} compact />
                     </div>
                   ))}
                 </div>
@@ -471,7 +509,7 @@ export function ComparePage() {
               <div className="grid gap-2 border-b border-[#e8e1d3] p-4">
                 <button className="inline-flex h-10 items-center justify-center gap-2 rounded-[8px] bg-[var(--terracotta)] text-sm font-semibold text-white" onClick={findOnRoute} type="button"><Route size={15} />Find on Route</button>
                 <div className="grid grid-cols-2 gap-2">
-                  <Link className="inline-flex h-9 items-center justify-center gap-2 rounded-[8px] border border-[#d6cdbb] text-sm font-semibold" to="/map"><Map size={14} />Open Map</Link>
+                  <button className="inline-flex h-9 items-center justify-center gap-2 rounded-[8px] border border-[#d6cdbb] text-sm font-semibold" onClick={() => openMap(selected[0]?.routeStopId ?? 'greenhouse-route')} type="button"><Map size={14} />Open Map</button>
                   <Link className="inline-flex h-9 items-center justify-center rounded-[8px] border border-[#d6cdbb] text-sm font-semibold" to="/peppers/lemon-drop">Details</Link>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -486,7 +524,7 @@ export function ComparePage() {
         </div>
       </PageShell>
 
-      <div className="sticky bottom-0 z-30 border-y border-[#e8e1d3] bg-white/95 backdrop-blur">
+      <div className="hidden sticky bottom-0 z-30 border-y border-[#e8e1d3] bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1200px] flex-col gap-3 px-4 py-3 text-[12px] text-[#6b6359] sm:flex-row sm:items-center sm:justify-between">
           <div>
             <span className="font-semibold text-[var(--ink)]">Comparing {selectedIds.length} of 3 peppers</span>

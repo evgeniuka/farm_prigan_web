@@ -1,11 +1,10 @@
 import { Check, CircleDot } from 'lucide-react'
-import { getStop } from '../../data/helpers'
-import { mainRoute } from '../../data/routes'
+import { getRouteStops } from '../../data/helpers'
 import { useVisit } from '../../hooks/useVisit'
 
 export function RouteProgress() {
   const { visit } = useVisit()
-  const routeStops = mainRoute.stops.map(getStop)
+  const routeStops = getRouteStops(visit)
   const activeIndex = routeStops.findIndex((stop) => stop?.id === visit.activeStopId)
 
   return (
@@ -14,7 +13,7 @@ export function RouteProgress() {
         <p className="text-sm font-semibold text-[var(--ink)]">Route progress</p>
         <p className="text-sm text-[var(--muted)]">Stop {activeIndex + 1} of {routeStops.length}</p>
       </div>
-      <div className="grid grid-cols-5 gap-2">
+      <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${routeStops.length}, minmax(0, 1fr))` }}>
         {routeStops.map((stop, index) => {
           const isVisited = visit.visitedStopIds.includes(stop.id)
           const isActive = stop.id === visit.activeStopId

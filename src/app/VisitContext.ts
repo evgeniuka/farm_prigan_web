@@ -1,9 +1,10 @@
 import { createContext } from 'react'
-import type { UserVisit } from '../types/domain'
+import type { LanguageCode, UserVisit } from '../types/domain'
 
 export type VisitContextValue = {
   visit: UserVisit
   setPreference: (key: keyof Pick<UserVisit, 'selectedDuration' | 'selectedMode' | 'selectedSpiceLevel' | 'selectedWalkingPreference'>, value: string) => void
+  setLanguage: (language: LanguageCode) => void
   toggleInterest: (interest: string) => void
   toggleComfortNeed: (need: string) => void
   acceptRoute: () => void
@@ -11,6 +12,10 @@ export type VisitContextValue = {
   markVisited: (stopId: string) => void
   continueToNextStop: () => string
   skipStop: () => string
+  shortenRoute: () => string
+  addStopToRoute: (stopId: string) => void
+  removeStopFromRoute: (stopId: string) => void
+  resetCustomRoute: () => void
   setActiveStop: (stopId: string) => void
   chooseRecommended: () => void
   chooseManual: () => void

@@ -19,19 +19,14 @@ import {
   UsersRound,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import stopDetailHero from '../assets/figma/stop-detail-hero.png'
 import { PageShell } from '../components/layout/PageShell'
+import { getRouteStops, getStop } from '../data/helpers'
 import { routeImages } from '../data/routeImages'
 import { useVisit } from '../hooks/useVisit'
+import type { Stop } from '../types/domain'
 import { cn } from '../utils/cn'
-
-const routeSteps = [
-  { label: 'Visitor Center', state: 'done' },
-  { label: 'Greenhouse Route', state: 'current' },
-  { label: 'Tasting GH 1-2', state: 'next' },
-  { label: 'Product Shop', state: 'upcoming' },
-] as const
 
 const seeItems = [
   'Pepper plants growing in 8 controlled bays - each at a different growth stage',
@@ -54,8 +49,6 @@ const safetyItems = [
   'Follow any signs posted by farm staff',
 ]
 
-const aiReasons = ['Matches learning interest', 'Close to Visitor Center', 'Fits visit time', 'Prepares for tasting']
-
 function Panel({ children, className }: { children: ReactNode; className?: string }) {
   return <section className={cn('rounded-[18px] border border-[#e8e1d3] bg-white shadow-[0_1px_2px_rgba(42,36,32,0.03)]', className)}>{children}</section>
 }
@@ -74,13 +67,18 @@ function SoftBadge({ children, tone = 'sand' }: { children: ReactNode; tone?: 's
   return <span className={cn('inline-flex h-6 items-center rounded-full border px-3 text-xs font-medium leading-[18px]', toneClass)}>{children}</span>
 }
 
-function StopContextHeader() {
+function StopContextHeader({ currentStopId }: { currentStopId: string }) {
+  const { visit } = useVisit()
+  const routeStops = getRouteStops(visit)
+  const currentIndex = Math.max(0, routeStops.findIndex((stop) => stop.id === currentStopId))
+  const currentStop = routeStops[currentIndex]
+
   return (
     <Panel className="p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <span className="h-1.5 w-1.5 rounded-full bg-[#c04a2b]" />
-          <SectionLabel>Current Stop · Stop 2 of 4</SectionLabel>
+          <SectionLabel>Current Stop - Stop {currentIndex + 1} of {routeStops.length}</SectionLabel>
         </div>
         <span className="inline-flex h-[22px] w-fit items-center gap-1.5 rounded-full border border-[#e8e1d3] bg-[#f2ede4] px-3 text-[11px] font-medium text-[#8a7a63]">
           <Route size={11} />
@@ -88,18 +86,18 @@ function StopContextHeader() {
         </span>
       </div>
 
-      <h1 className="mt-3 text-[22px] font-semibold leading-[30px] text-[#2a2420]">Greenhouse Route</h1>
+      <h1 className="mt-3 text-[22px] font-semibold leading-[30px] text-[#2a2420]">{currentStop.name}</h1>
       <p className="mt-0.5 text-[15px] leading-[22px] text-[#6b6359]">Growing greenhouses · North & central area</p>
 
-      <div className="mt-5 grid grid-cols-4 items-start gap-0">
-        {routeSteps.map((step, index) => {
-          const isDone = step.state === 'done'
-          const isCurrent = step.state === 'current'
-          const isNext = step.state === 'next'
+      <div className="mt-5 grid items-start gap-0" style={{ gridTemplateColumns: `repeat(${routeStops.length}, minmax(0, 1fr))` }}>
+        {routeStops.map((step, index) => {
+          const isDone = index < currentIndex
+          const isCurrent = index === currentIndex
+          const isNext = index === currentIndex + 1
 
           return (
-            <div className="relative flex min-h-[60px] flex-col items-center gap-1" key={step.label}>
-              {index < routeSteps.length - 1 ? (
+            <div className="relative flex min-h-[60px] flex-col items-center gap-1" key={step.id}>
+              {index < routeStops.length - 1 ? (
                 <span
                   className={cn(
                     'absolute left-1/2 top-3 h-0.5 w-full rounded-full',
@@ -113,7 +111,7 @@ function StopContextHeader() {
                   isDone && 'bg-[#3e7f74] text-white',
                   isCurrent && 'bg-[#c04a2b] text-white',
                   isNext && 'border border-[#c04a2b] bg-white text-[#c04a2b]',
-                  step.state === 'upcoming' && 'border border-[#e8e1d3] bg-white text-[#8a7a63]',
+                  !isDone && !isCurrent && !isNext && 'border border-[#e8e1d3] bg-white text-[#8a7a63]',
                 )}
               >
                 {isDone ? <Check size={11} /> : index + 1}
@@ -126,7 +124,7 @@ function StopContextHeader() {
                   !isDone && !isCurrent && 'text-[#8a7a63]',
                 )}
               >
-                {step.label}
+                {step.shortName}
               </span>
             </div>
           )
@@ -273,64 +271,82 @@ function SafetyNoteCard() {
 }
 
 function AIRecommendationCard() {
+  const { visit } = useVisit()
+  const reasons = [
+    `Fits ${visit.selectedDuration}`,
+    `${visit.selectedMode} mode`,
+    `${visit.selectedSpiceLevel} tasting comfort`,
+  ]
+
   return (
     <Panel className="p-6">
       <SectionLabel>AI recommendation</SectionLabel>
       <h2 className="mt-1 text-base font-semibold leading-6 text-[#2a2420]">Why this stop was recommended</h2>
       <div className="mt-3 flex flex-wrap gap-2">
-        {aiReasons.map((reason) => (
+        {reasons.map((reason) => (
           <SoftBadge key={reason} tone="green">{reason}</SoftBadge>
         ))}
       </div>
       <div className="mt-4 flex items-start gap-2 rounded-[10px] border border-[#b4d4cb] bg-[#e1efeb] px-3 py-3 text-xs leading-[18px] text-[#3e7f74]">
         <Star className="mt-0.5 shrink-0" size={13} />
-        This stop was recommended because it matches your learning-focused visit, keeps the route close to the Visitor Center,
-        avoids staff-only areas, and connects naturally to Tasting GH 1-2.
+        This stop was recommended because it keeps the route close to the Visitor Center, avoids staff-only areas,
+        prepares you for tasting, and can be skipped or changed at any time.
       </div>
     </Panel>
   )
 }
 
-function NextStopPreview() {
+function NextStopPreview({ currentStopId }: { currentStopId: string }) {
+  const { visit } = useVisit()
+  const routeStops = getRouteStops(visit)
+  const currentIndex = Math.max(0, routeStops.findIndex((stop) => stop.id === currentStopId))
+  const nextStop = routeStops[currentIndex + 1]
+
+  if (!nextStop) return null
+
   return (
     <Panel className="p-6">
       <SectionLabel>What comes next</SectionLabel>
       <h2 className="mt-1 text-base font-semibold leading-6 text-[#2a2420]">Next stop preview</h2>
       <div className="mt-4 flex items-center gap-3 rounded-[10px] border border-[#e8e1d3] bg-[#f2ede4] p-3">
-        <img alt="" className="h-[58px] w-[58px] rounded-[8px] object-cover" src={routeImages['tasting-gh-1-2']} />
+        <img alt="" className="h-[58px] w-[58px] rounded-[8px] object-cover" src={routeImages[nextStop.id]} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[11px] font-medium uppercase leading-4 tracking-[0.5px] text-[#8a7a63]">Stop 3 of 4</span>
+            <span className="text-[11px] font-medium uppercase leading-4 tracking-[0.5px] text-[#8a7a63]">Stop {currentIndex + 2} of {routeStops.length}</span>
             <SoftBadge tone="red">Next stop</SoftBadge>
           </div>
-          <h3 className="mt-1 text-[15px] font-semibold leading-[22px] text-[#2a2420]">Tasting GH 1-2</h3>
-          <p className="mt-1 text-xs leading-[18px] text-[#8a7a63]">Tasting · Mild heat · 3 min walk</p>
+          <h3 className="mt-1 text-[15px] font-semibold leading-[22px] text-[#2a2420]">{nextStop.name}</h3>
+          <p className="mt-1 text-xs leading-[18px] text-[#8a7a63]">{nextStop.type} - {nextStop.tags.slice(0, 2).join(' - ')} - {nextStop.walkingMinutesFromPrevious} min walk</p>
         </div>
       </div>
       <div className="mt-3 flex items-start gap-2 rounded-[9px] border border-[#e8e1d3] bg-[#fbf8f3] px-3 py-2 text-xs leading-[18px] text-[#8a7a63]">
         <MapPin className="mt-0.5 shrink-0 text-[#c48b47]" size={13} />
-        Walking cue: Walk back toward the centre path. Tasting GH 1-2 is marked with a blue sign - 3 min from here.
+        Walking cue: continue toward {nextStop.shortName}. It is about {nextStop.walkingMinutesFromPrevious} min from here.
       </div>
     </Panel>
   )
 }
 
-function ContinueRoutePanel() {
-  const { markVisited, setActiveStop, chooseManual } = useVisit()
+function ContinueRoutePanel({ currentStopId }: { currentStopId: string }) {
+  const { markVisited, setActiveStop, chooseManual, visit } = useVisit()
   const navigate = useNavigate()
+  const routeStops = getRouteStops(visit)
+  const currentIndex = Math.max(0, routeStops.findIndex((stop) => stop.id === currentStopId))
+  const currentStop = routeStops[currentIndex]
+  const nextStop = routeStops[currentIndex + 1]
 
   const markCurrentStop = () => {
-    markVisited('greenhouse-route')
+    markVisited(currentStop.id)
   }
 
   const continueToTasting = () => {
-    markVisited('greenhouse-route')
-    setActiveStop('tasting-gh-1-2')
+    markVisited(currentStop.id)
+    if (nextStop) setActiveStop(nextStop.id)
     navigate('/route')
   }
 
   const skipThisStop = () => {
-    setActiveStop('tasting-gh-1-2')
+    if (nextStop) setActiveStop(nextStop.id)
     navigate('/route')
   }
 
@@ -346,24 +362,24 @@ function ContinueRoutePanel() {
       <div className="mt-4 space-y-2">
         <button
           className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[10px] border border-[#c04a2b] bg-[#c04a2b] px-4 text-sm font-semibold text-white transition hover:bg-[#a63d23]"
+          onClick={continueToTasting}
+          type="button"
+        >
+          {nextStop ? `Continue to ${nextStop.shortName}` : 'Back to Route'}
+          <ArrowRight size={14} />
+        </button>
+        <button
+          className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] border border-[#e8e1d3] bg-white px-4 text-[13px] font-semibold text-[#2a2420] transition hover:bg-[#fbf8f3]"
           onClick={markCurrentStop}
           type="button"
         >
           <CheckCircle2 size={14} />
           Mark as Visited
         </button>
-        <button
-          className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] border border-[#e8e1d3] bg-white px-4 text-[13px] font-semibold text-[#2a2420] transition hover:bg-[#fbf8f3]"
-          onClick={continueToTasting}
-          type="button"
-        >
-          Continue to Tasting GH 1-2
-          <ArrowRight size={14} />
-        </button>
       </div>
       <p className="mt-3 flex items-center gap-2 text-[11px] leading-[16.5px] text-[#8a7a63]">
         <Info size={12} />
-        Mark as visited first, then continue to the next stop.
+        Continuing will mark this stop as visited and move you to the next route step.
       </p>
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
         <Link className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-[#e8e1d3] bg-white text-[13px] font-medium text-[#2a2420] hover:bg-[#fbf8f3]" to="/map">
@@ -380,7 +396,7 @@ function ContinueRoutePanel() {
           type="button"
         >
           <SkipForward size={13} />
-          Skip This Stop
+          Skip Stop
         </button>
         <button
           className="inline-flex h-9 items-center justify-center gap-2 rounded-[9px] border border-[#e8e1d3] bg-[#fbf8f3] text-xs font-medium text-[#6b6359] hover:bg-white"
@@ -404,10 +420,10 @@ function RouteProgressPanel() {
       </div>
       <div className="mt-4 flex items-center justify-between text-xs text-[#8a7a63]">
         <span>Route progress</span>
-        <span className="font-medium text-[#c04a2b]">2 / 4 stops</span>
+        <span className="font-medium text-[#c04a2b]">3 / 5 stops</span>
       </div>
       <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#e8e1d3]">
-        <div className="h-full w-1/2 rounded-full bg-[#c04a2b]" />
+        <div className="h-full w-[60%] rounded-full bg-[#c04a2b]" />
       </div>
       <div className="mt-4 flex items-center gap-2 text-xs font-medium text-[#c04a2b]">
         <Clock size={13} />
@@ -453,11 +469,11 @@ function StopsPanelSidebar() {
   return (
     <Panel className="space-y-2 p-5">
       <StopMiniCard
-        image={routeImages['visitor-center']}
+        image={routeImages['greenhouse-entry']}
         label="Previous Stop"
-        meta="Info · Completed"
+        meta="Orientation · Completed"
         status="Completed"
-        title="Visitor Center"
+        title="Greenhouse Entry"
         tone="green"
       />
       <StopMiniCard
@@ -529,7 +545,54 @@ function QuickLinksPanel() {
   )
 }
 
-export function StopDetailPage() {
+function stopTypeLabel(stop: Stop) {
+  if (stop.type === 'arrival') return 'Orientation'
+  if (stop.type === 'greenhouse') return 'Greenhouse'
+  if (stop.type === 'tasting') return 'Tasting'
+  if (stop.type === 'shop') return 'Product Shop'
+  return 'Visitor area'
+}
+
+function GenericStopDetailPage({ stopId }: { stopId: string }) {
+  const { chooseManual, finishVisit, markVisited, setActiveStop, visit } = useVisit()
+  const navigate = useNavigate()
+  const routeStops = getRouteStops(visit)
+  const stop = getStop(stopId)
+  const rawStopIndex = routeStops.findIndex((item) => item.id === stop.id)
+  const activeRouteIndex = Math.max(0, routeStops.findIndex((item) => item.id === visit.activeStopId))
+  const isRouteStop = rawStopIndex >= 0
+  const stopIndex = isRouteStop ? rawStopIndex : activeRouteIndex
+  const nextStop = isRouteStop && rawStopIndex < routeStops.length - 1 ? routeStops[rawStopIndex + 1] : null
+  const previousStop = isRouteStop && rawStopIndex > 0 ? routeStops[rawStopIndex - 1] : null
+  const isVisited = visit.visitedStopIds.includes(stop.id)
+  const progressPercent = Math.round(((stopIndex + 1) / routeStops.length) * 100)
+  const routePositionLabel = isRouteStop ? `Stop ${rawStopIndex + 1} of ${routeStops.length}` : 'Optional stop'
+
+  const continueRoute = () => {
+    markVisited(stop.id)
+    if (!isRouteStop) {
+      navigate('/route')
+      return
+    }
+
+    if (nextStop) {
+      setActiveStop(nextStop.id)
+      navigate('/route')
+      return
+    }
+    finishVisit()
+    navigate('/finish')
+  }
+
+  const markCurrentStop = () => {
+    markVisited(stop.id)
+  }
+
+  const openManualMap = () => {
+    chooseManual()
+    navigate('/map')
+  }
+
   return (
     <PageShell className="py-8 md:py-9">
       <div className="mx-auto max-w-[1200px]">
@@ -539,22 +602,222 @@ export function StopDetailPage() {
             Back to Live Route
           </Link>
           <span className="text-[#d6cdbb]">/</span>
-          <span className="font-medium text-[#2a2420]">Stop 2 - Greenhouse Route</span>
+          <span className="font-medium text-[#2a2420]">{routePositionLabel} - {stop.name}</span>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,856px)_320px]">
+        <div className="mx-auto grid max-w-[980px] gap-6 lg:grid-cols-1">
           <div className="space-y-5">
-            <StopContextHeader />
+            <Panel className="p-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#c04a2b]" />
+                  <SectionLabel>{isVisited ? 'Visited Stop' : isRouteStop ? 'Route Stop' : 'Manual Option'} - {routePositionLabel}</SectionLabel>
+                </div>
+                <SoftBadge tone={stop.id === visit.activeStopId ? 'red' : isVisited ? 'green' : 'sand'}>
+                  {stop.id === visit.activeStopId ? 'Current stop' : isVisited ? 'Visited' : 'Preview'}
+                </SoftBadge>
+              </div>
+
+              <h1 className="mt-3 text-[24px] font-semibold leading-[31px] text-[#2a2420]">{stop.name}</h1>
+              <p className="mt-1 text-[15px] leading-[22px] text-[#6b6359]">{stop.description}</p>
+
+              <div className="mt-5">
+                <div className="mb-2 flex items-center justify-between text-xs text-[#8a7a63]">
+                  <span>{isRouteStop ? 'Route progress' : 'Current route progress'}</span>
+                  <span className="font-medium text-[#c04a2b]">{isRouteStop ? `${rawStopIndex + 1} / ${routeStops.length}` : routePositionLabel}</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-[#e8e1d3]">
+                  <div className="h-full rounded-full bg-[#c04a2b]" style={{ width: `${progressPercent}%` }} />
+                </div>
+              </div>
+            </Panel>
+
+            <Panel className="overflow-hidden p-[1px]">
+              <div className="relative h-[220px] overflow-hidden rounded-t-[17px]">
+                <img alt={`${stop.name} route stop`} className="h-full w-full object-cover" src={routeImages[stop.id] ?? stopDetailHero} />
+                <span className="absolute left-4 top-4 inline-flex h-[30px] items-center gap-1.5 rounded-full bg-[#3e7f74] px-3 text-xs font-medium text-white shadow-sm">
+                  <MapPin size={12} />
+                  {stopTypeLabel(stop)}
+                </span>
+                <span className="absolute right-4 top-4 inline-flex h-[30px] items-center gap-1.5 rounded-full border border-[#e8e1d3] bg-[rgba(255,255,255,0.9)] px-3 text-xs font-medium text-[#6b6359]">
+                  <Clock size={13} />
+                  {stop.durationMinutes} min
+                </span>
+              </div>
+              <div className="space-y-3 px-6 pb-5 pt-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  {stop.tags.map((tag) => (
+                    <SoftBadge key={tag}>{tag}</SoftBadge>
+                  ))}
+                </div>
+                <div className="flex items-start gap-2 rounded-[9px] border border-[#e8e1d3] bg-[#f2ede4] px-3 py-2 text-[11px] leading-[16.5px] text-[#8a7a63]">
+                  <MapPin className="mt-0.5 shrink-0 text-[#c48b47]" size={13} />
+                  <p>
+                    <span className="font-medium text-[#6b6359]">Walking cue:</span>{' '}
+                    {previousStop ? `${stop.walkingMinutesFromPrevious} min from ${previousStop.shortName}.` : isRouteStop ? 'Start here from the visitor entrance.' : `${stop.walkingMinutesFromPrevious} min from the main visitor path. Optional stop.`}
+                  </p>
+                </div>
+              </div>
+            </Panel>
+
+            <Panel className="p-6">
+              <SectionLabel>At this stop</SectionLabel>
+              <h2 className="mt-1 text-base font-semibold leading-6 text-[#2a2420]">What you see here</h2>
+              <ul className="mt-3 space-y-2 border-b border-[#e8e1d3] pb-5">
+                {stop.whatYouSee.map((item) => (
+                  <li className="flex gap-2 text-[13px] leading-5 text-[#2a2420]" key={item}>
+                    <CheckCircle2 className="mt-[3px] shrink-0 text-[#3e7f74]" size={14} />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <h2 className="mt-5 text-base font-semibold leading-6 text-[#2a2420]">What to do here</h2>
+              <ol className="mt-3 space-y-2">
+                {stop.whatToDo.map((item, index) => (
+                  <li className="flex gap-2 text-[13px] leading-5 text-[#2a2420]" key={item}>
+                    <span className="mt-[2px] flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#c04a2b] text-[10px] font-semibold text-white">
+                      {index + 1}
+                    </span>
+                    {item}
+                  </li>
+                ))}
+              </ol>
+            </Panel>
+
+            <Panel className="p-6">
+              <SectionLabel>Safety</SectionLabel>
+              <h2 className="mt-1 text-base font-semibold leading-6 text-[#2a2420]">Safety note</h2>
+              <div className="mt-3 flex gap-2 rounded-[10px] border border-[#f0d9a4] bg-[#fef3e2] px-3 py-3 text-[13px] leading-5 text-[#8a5a2b]">
+                <ShieldAlert className="mt-0.5 shrink-0" size={14} />
+                {stop.safetyNotes}
+              </div>
+            </Panel>
+
+            <Panel className="p-6">
+              <SectionLabel>AI recommendation</SectionLabel>
+              <h2 className="mt-1 text-base font-semibold leading-6 text-[#2a2420]">Why this stop was recommended</h2>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <SoftBadge tone="green">Fits {visit.selectedDuration}</SoftBadge>
+                <SoftBadge tone="green">{visit.selectedMode}</SoftBadge>
+                <SoftBadge tone="green">{visit.selectedSpiceLevel} comfort</SoftBadge>
+                <SoftBadge tone="green">Manual override available</SoftBadge>
+              </div>
+              <p className="mt-3 text-xs leading-[18px] text-[#3e7f74]">
+                This is a route suggestion, not a rule. You can skip this stop, open the map, or choose another stop manually.
+              </p>
+            </Panel>
+
+            <Panel className="p-6">
+              <SectionLabel>Route in progress</SectionLabel>
+              <h2 className="mt-1 text-base font-semibold leading-6 text-[#2a2420]">{nextStop ? `Next: ${nextStop.name}` : isRouteStop ? 'Finish your visit' : 'Return to your route'}</h2>
+              {nextStop ? (
+                <div className="mt-4 flex items-center gap-3 rounded-[10px] border border-[#e8e1d3] bg-[#f2ede4] p-3">
+                  <img alt="" className="h-[58px] w-[58px] rounded-[8px] object-cover" src={routeImages[nextStop.id]} />
+                  <div className="min-w-0 flex-1">
+                    <SectionLabel>Stop {routeStops.findIndex((item) => item.id === nextStop.id) + 1} of {routeStops.length}</SectionLabel>
+                    <h3 className="mt-1 text-[15px] font-semibold leading-[22px] text-[#2a2420]">{nextStop.name}</h3>
+                    <p className="mt-1 text-xs leading-[18px] text-[#8a7a63]">{nextStop.durationMinutes} min · {nextStop.tags.slice(0, 2).join(' · ')}</p>
+                  </div>
+                </div>
+              ) : null}
+              <div className="mt-4 space-y-2">
+                <button
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[10px] border border-[#c04a2b] bg-[#c04a2b] px-4 text-sm font-semibold text-white transition hover:bg-[#a63d23]"
+                  onClick={continueRoute}
+                  type="button"
+                >
+                  {nextStop ? `Continue to ${nextStop.shortName}` : isRouteStop ? 'Finish Visit' : 'Back to Route'}
+                  <ArrowRight size={14} />
+                </button>
+                <button
+                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] border border-[#e8e1d3] bg-white px-4 text-[13px] font-semibold text-[#2a2420] transition hover:bg-[#fbf8f3]"
+                  onClick={markCurrentStop}
+                  type="button"
+                >
+                  <CheckCircle2 size={14} />
+                  {isVisited ? 'Visited' : 'Mark as Visited'}
+                </button>
+              </div>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                <Link className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-[#e8e1d3] bg-white text-[13px] font-medium text-[#2a2420] hover:bg-[#fbf8f3]" to="/map">
+                  <Map size={14} />
+                  Open Map
+                </Link>
+                <Link className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-[#e8e1d3] bg-white text-[13px] font-medium text-[#2a2420] hover:bg-[#fbf8f3]" to="/route">
+                  <ArrowLeft size={14} />
+                  Back to Route
+                </Link>
+                <button
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-[9px] border border-[#e8e1d3] bg-[#fbf8f3] text-xs font-medium text-[#6b6359] hover:bg-white"
+                  onClick={openManualMap}
+                  type="button"
+                >
+                  <Shuffle size={13} />
+                  Choose Manually
+                </button>
+              </div>
+            </Panel>
+          </div>
+
+          <aside className="hidden space-y-4 lg:sticky lg:top-24 lg:self-start">
+            <Panel className="p-5">
+              <div className="flex items-center justify-between gap-3">
+                <SectionLabel>Route Progress</SectionLabel>
+                <SoftBadge tone={isVisited ? 'green' : 'red'}>{isVisited ? 'Visited' : 'Preview'}</SoftBadge>
+              </div>
+              <div className="mt-4 flex items-center justify-between text-xs text-[#8a7a63]">
+                <span>{isRouteStop ? 'Route progress' : 'Current route progress'}</span>
+                <span className="font-medium text-[#c04a2b]">{isRouteStop ? `${rawStopIndex + 1} / ${routeStops.length} stops` : 'Optional stop'}</span>
+              </div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#e8e1d3]">
+                <div className="h-full rounded-full bg-[#c04a2b]" style={{ width: `${progressPercent}%` }} />
+              </div>
+            </Panel>
+            <SelectionsPanel />
+            <QuickLinksPanel />
+          </aside>
+        </div>
+      </div>
+    </PageShell>
+  )
+}
+
+export function StopDetailPage() {
+  const { stopId } = useParams()
+  const { visit } = useVisit()
+  const currentStopId = stopId ?? 'greenhouse-route'
+  const routeStops = getRouteStops(visit)
+  const greenhouseIndex = Math.max(0, routeStops.findIndex((stop) => stop.id === 'greenhouse-route'))
+
+  if (currentStopId !== 'greenhouse-route' || visit.activeStopId !== 'greenhouse-route') {
+    return <GenericStopDetailPage stopId={currentStopId} />
+  }
+
+  return (
+    <PageShell className="py-8 md:py-9">
+      <div className="mx-auto max-w-[1200px]">
+        <div className="mb-5 flex flex-wrap items-center gap-2 text-xs leading-[18px]">
+          <Link className="inline-flex items-center gap-1 font-medium text-[#6b6359] hover:text-[#c04a2b]" to="/route">
+            <ArrowLeft size={13} />
+            Back to Live Route
+          </Link>
+          <span className="text-[#d6cdbb]">/</span>
+          <span className="font-medium text-[#2a2420]">Stop {greenhouseIndex + 1} - Greenhouse Route</span>
+        </div>
+
+        <div className="mx-auto grid max-w-[980px] gap-6 lg:grid-cols-1">
+          <div className="space-y-5">
+            <StopContextHeader currentStopId="greenhouse-route" />
             <StopHeroCard />
             <ObserveAndDoCard />
             <PepperVarietiesCard />
             <SafetyNoteCard />
             <AIRecommendationCard />
-            <NextStopPreview />
-            <ContinueRoutePanel />
+            <NextStopPreview currentStopId="greenhouse-route" />
+            <ContinueRoutePanel currentStopId="greenhouse-route" />
           </div>
 
-          <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+          <aside className="hidden space-y-4 lg:sticky lg:top-24 lg:self-start">
             <RouteProgressPanel />
             <StopsPanelSidebar />
             <SelectionsPanel />

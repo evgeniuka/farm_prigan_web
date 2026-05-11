@@ -41,7 +41,7 @@ export const peppers: Pepper[] = [
     flavorTags: ['Fruity', 'Floral', 'Intense'],
     suitabilityTags: ['Advanced visitors', 'Taste carefully'],
     tastingStatus: 'Available for tasting',
-    routeStopId: 'tasting-gh-1-2',
+    routeStopId: 'tasting-gh-3-4',
     imageTone: { a: '#e36f22', b: '#f2a02e', c: '#bd3a2c' },
     caution: 'Very hot. Advanced visitors only and best tasted with staff guidance.',
     saved: false,

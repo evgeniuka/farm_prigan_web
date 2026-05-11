@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { getNextStopId } from '../data/helpers'
+import { getNextStopId, isRouteStopId } from '../data/helpers'
+import { getClosestStopInRoute, getRouteStopIds, insertRouteStop, isLockedRouteStop, removeRouteStop } from '../data/adaptiveRoute'
 import { initialUserVisit } from '../data/userVisit'
 import type { UserVisit } from '../types/domain'
 import { VisitContext } from './VisitContext'
 import type { VisitContextValue } from './VisitContext'
 
 const storageKey = 'prigan-guide-visit'
-const storageVersion = 3
+const storageVersion = 8
 
 function readStoredVisit() {
   const stored = window.localStorage.getItem(storageKey)
@@ -21,15 +22,33 @@ function readStoredVisit() {
   }
 }
 
+function sameRoute(left: string[], right: string[]) {
+  return left.length === right.length && left.every((stopId, index) => stopId === right[index])
+}
+
 export function VisitProvider({ children }: { children: ReactNode }) {
-  const [visit, setVisit] = useState<UserVisit>(() => readStoredVisit())
+  const [visit, setVisit] = useState<UserVisit>(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('resetVisit') === '1' ? initialUserVisit : readStoredVisit()
+  })
 
   useEffect(() => {
     window.localStorage.setItem(storageKey, JSON.stringify({ ...visit, storageVersion }))
   }, [visit])
 
   const setPreference: VisitContextValue['setPreference'] = useCallback((key, value) => {
-    setVisit((current) => ({ ...current, [key]: value }))
+    setVisit((current) => {
+      const nextVisit = { ...current, [key]: value, customRouteStopIds: null, routeAccepted: false, finished: false }
+      const routeStopIds = getRouteStopIds(nextVisit)
+      return {
+        ...nextVisit,
+        activeStopId: getClosestStopInRoute(current.activeStopId, routeStopIds),
+      }
+    })
+  }, [])
+
+  const setLanguage: VisitContextValue['setLanguage'] = useCallback((selectedLanguage) => {
+    setVisit((current) => ({ ...current, selectedLanguage }))
   }, [])
 
   const toggleInterest = useCallback((interest: string) => {
@@ -38,7 +57,7 @@ export function VisitProvider({ children }: { children: ReactNode }) {
         ? current.selectedInterests.filter((item) => item !== interest)
         : [...current.selectedInterests, interest]
 
-      return { ...current, selectedInterests }
+      return { ...current, selectedInterests, routeAccepted: false, finished: false }
     })
   }, [])
 
@@ -51,12 +70,18 @@ export function VisitProvider({ children }: { children: ReactNode }) {
         ? 'Easy walking'
         : current.selectedWalkingPreference
 
-      return { ...current, selectedComfortNeeds, selectedWalkingPreference }
+      return { ...current, selectedComfortNeeds, selectedWalkingPreference, routeAccepted: false, finished: false }
     })
   }, [])
 
   const acceptRoute = useCallback(() => {
-    setVisit((current) => ({ ...current, routeAccepted: true, manualMode: false, finished: false }))
+    setVisit((current) => ({
+      ...current,
+      activeStopId: isRouteStopId(current.activeStopId, current) ? current.activeStopId : getRouteStopIds(current)[0],
+      routeAccepted: true,
+      manualMode: false,
+      finished: false,
+    }))
   }, [])
 
   const editPreferences = useCallback(() => {
@@ -75,7 +100,7 @@ export function VisitProvider({ children }: { children: ReactNode }) {
   const moveToNext = useCallback((markCurrent: boolean) => {
     let nextId = initialUserVisit.activeStopId
     setVisit((current) => {
-      nextId = getNextStopId(current.activeStopId)
+      nextId = getNextStopId(current.activeStopId, current)
       const visitedStopIds = markCurrent && !current.visitedStopIds.includes(current.activeStopId)
         ? [...current.visitedStopIds, current.activeStopId]
         : current.visitedStopIds
@@ -86,13 +111,80 @@ export function VisitProvider({ children }: { children: ReactNode }) {
 
   const continueToNextStop = useCallback(() => moveToNext(true), [moveToNext])
   const skipStop = useCallback(() => moveToNext(false), [moveToNext])
+  const shortenRoute = useCallback(() => {
+    let nextActiveStopId = initialUserVisit.activeStopId
+
+    setVisit((current) => ({
+      ...current,
+      activeStopId: (() => {
+        const nextVisit = { ...current, selectedDuration: '30 min', customRouteStopIds: null, manualMode: false, routeAccepted: true, finished: false }
+        const routeStopIds = getRouteStopIds(nextVisit)
+        nextActiveStopId = getClosestStopInRoute(current.activeStopId, routeStopIds)
+        return nextActiveStopId
+      })(),
+      manualMode: false,
+      routeAccepted: true,
+      finished: false,
+      customRouteStopIds: null,
+      selectedDuration: '30 min',
+    }))
+
+    return nextActiveStopId
+  }, [])
+
+  const addStopToRoute = useCallback((stopId: string) => {
+    setVisit((current) => {
+      const currentRouteStopIds = getRouteStopIds(current)
+      const customRouteStopIds = insertRouteStop(current.customRouteStopIds ?? currentRouteStopIds, stopId)
+      const recommendedRouteStopIds = getRouteStopIds({ ...current, customRouteStopIds: null })
+      const customMatchesRecommended = sameRoute(customRouteStopIds, recommendedRouteStopIds)
+
+      return {
+        ...current,
+        customRouteStopIds: customMatchesRecommended ? null : customRouteStopIds,
+        manualMode: !customMatchesRecommended,
+        finished: false,
+      }
+    })
+  }, [])
+
+  const removeStopFromRoute = useCallback((stopId: string) => {
+    if (isLockedRouteStop(stopId)) return
+
+    setVisit((current) => {
+      const currentRouteStopIds = getRouteStopIds(current)
+      const customRouteStopIds = removeRouteStop(current.customRouteStopIds ?? currentRouteStopIds, stopId)
+      const activeStopId = getClosestStopInRoute(current.activeStopId === stopId ? stopId : current.activeStopId, customRouteStopIds)
+      const recommendedRouteStopIds = getRouteStopIds({ ...current, customRouteStopIds: null })
+      const customMatchesRecommended = sameRoute(customRouteStopIds, recommendedRouteStopIds)
+
+      return {
+        ...current,
+        activeStopId,
+        customRouteStopIds: customMatchesRecommended ? null : customRouteStopIds,
+        manualMode: !customMatchesRecommended,
+        finished: false,
+      }
+    })
+  }, [])
+
+  const resetCustomRoute = useCallback(() => {
+    setVisit((current) => {
+      const nextVisit = { ...current, customRouteStopIds: null, manualMode: false, routeAccepted: false, finished: false }
+      const routeStopIds = getRouteStopIds(nextVisit)
+      return {
+        ...nextVisit,
+        activeStopId: getClosestStopInRoute(current.activeStopId, routeStopIds),
+      }
+    })
+  }, [])
 
   const setActiveStop = useCallback((stopId: string) => {
-    setVisit((current) => ({ ...current, activeStopId: stopId }))
+    setVisit((current) => ({ ...current, activeStopId: stopId, finished: false }))
   }, [])
 
   const chooseRecommended = useCallback(() => {
-    setVisit((current) => ({ ...current, manualMode: false, routeAccepted: false }))
+    setVisit((current) => ({ ...current, customRouteStopIds: null, manualMode: false, routeAccepted: false }))
   }, [])
 
   const chooseManual = useCallback(() => {
@@ -137,6 +229,7 @@ export function VisitProvider({ children }: { children: ReactNode }) {
     () => ({
       visit,
       setPreference,
+      setLanguage,
       toggleInterest,
       toggleComfortNeed,
       acceptRoute,
@@ -144,6 +237,10 @@ export function VisitProvider({ children }: { children: ReactNode }) {
       markVisited,
       continueToNextStop,
       skipStop,
+      shortenRoute,
+      addStopToRoute,
+      removeStopFromRoute,
+      resetCustomRoute,
       setActiveStop,
       chooseRecommended,
       chooseManual,
@@ -155,6 +252,7 @@ export function VisitProvider({ children }: { children: ReactNode }) {
     }),
     [
       acceptRoute,
+      addStopToRoute,
       chooseManual,
       chooseRecommended,
       continueToNextStop,
@@ -162,9 +260,13 @@ export function VisitProvider({ children }: { children: ReactNode }) {
       finishVisit,
       markVisited,
       removeComparedPepper,
+      removeStopFromRoute,
       resetVisit,
+      resetCustomRoute,
       setActiveStop,
       setPreference,
+      setLanguage,
+      shortenRoute,
       skipStop,
       toggleComfortNeed,
       toggleComparePepper,

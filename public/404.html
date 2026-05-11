@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prigan Guide</title>
+  </head>
+  <body>
+    <script>
+      (function () {
+        var locationObject = window.location;
+        var projectBase = '/farm_prigan_web/';
+        var base = locationObject.pathname.indexOf(projectBase) === 0 ? projectBase : '/';
+        var route = '/' + locationObject.pathname.slice(base.length);
+        var target = base + '?spa=' + encodeURIComponent(route + locationObject.search + locationObject.hash);
+        locationObject.replace(target);
+      })();
+    </script>
+  </body>
+</html>

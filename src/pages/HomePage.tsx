@@ -15,6 +15,7 @@ import {
 import { Link } from 'react-router-dom'
 import homeHeroPeppers from '../assets/figma/home-hero-peppers.png'
 import { PageShell } from '../components/layout/PageShell'
+import { useVisit } from '../hooks/useVisit'
 
 const quickStarts = [
   {
@@ -86,6 +87,21 @@ const trustItems = [
 ]
 
 export function HomePage() {
+  const { chooseRecommended, setPreference } = useVisit()
+
+  const applyQuickStart = (title: string) => {
+    if (title.startsWith('Explore')) return
+
+    chooseRecommended()
+    setPreference('selectedDuration', '40-45 min')
+    setPreference('selectedSpiceLevel', 'Mild')
+    setPreference('selectedWalkingPreference', 'Easy walking')
+
+    if (title.startsWith('Family')) {
+      setPreference('selectedMode', 'Family / Beginner-friendly')
+    }
+  }
+
   return (
     <PageShell className="pb-0 pt-0">
       <section className="px-0 pt-10 md:px-8 md:pt-14">
@@ -120,6 +136,7 @@ export function HomePage() {
               <Sparkles className="mt-0.5 shrink-0 text-[#c57a2d]" size={16} />
               <p>AI helps suggest a route based on your time and preferences. You can edit everything later.</p>
             </div>
+            <p className="mt-3 text-sm leading-5 text-[var(--muted)]">No download. No account. Start from the farm QR code.</p>
             <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm leading-5 text-[var(--muted)]">
               <span className="inline-flex items-center gap-2"><Clock3 className="text-[var(--terracotta)]" size={16} /> Starts in 2 min</span>
               <span className="hidden h-4 w-px bg-[var(--soft-border)] sm:inline-block" />
@@ -183,6 +200,7 @@ export function HomePage() {
               <Link
                 className="min-h-[187px] rounded-[12px] border border-[var(--soft-border)] bg-white px-5 py-5 transition hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(74,51,29,0.08)]"
                 key={item.title}
+                onClick={() => applyQuickStart(item.title)}
                 to={item.to}
               >
                 <div className="flex items-center justify-between gap-4">

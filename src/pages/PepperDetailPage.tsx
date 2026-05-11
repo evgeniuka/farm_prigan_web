@@ -14,6 +14,7 @@ import {
 import { type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { PageShell } from '../components/layout/PageShell'
+import { useMapOverlay } from '../components/map/useMapOverlay'
 import { getPepper, getStop } from '../data/helpers'
 import { pepperDetailFallback, pepperImages } from '../data/pepperImages'
 import { useVisit } from '../hooks/useVisit'
@@ -175,7 +176,8 @@ function RelatedPepperCard({ pepper, onCompare }: { pepper: Pepper; onCompare: (
 
 export function PepperDetailPage() {
   const { pepperId } = useParams()
-  const { visit, toggleSavePepper, toggleComparePepper, setActiveStop } = useVisit()
+  const { chooseManual, visit, toggleSavePepper, toggleComparePepper, setActiveStop } = useVisit()
+  const { openMap } = useMapOverlay()
   const navigate = useNavigate()
   const pepper = getPepper(pepperId ?? 'sweet-pepper')
   const name = displayName(pepper)
@@ -184,13 +186,19 @@ export function PepperDetailPage() {
   const compared = visit.comparedPepperIds.includes(pepper.id)
   const locationStopId = pepper.id === 'sweet-pepper' ? 'tasting-gh-1-2' : pepper.routeStopId
   const stop = getStop(locationStopId)
-  const savedCount = visit.savedPepperIds.length || 2
-  const compareCount = Math.max(visit.comparedPepperIds.length, compared ? 1 : 0)
+  const savedCount = visit.savedPepperIds.length
+  const compareCount = visit.comparedPepperIds.length
 
-  const saveLabel = 'Save Pepper'
+  const saveLabel = saved ? 'Remove from My Visit' : 'Save Pepper'
   const compareLabel = compared ? 'In Compare' : 'Add to Compare'
 
   function openStop() {
+    if (stop.isOptional) {
+      chooseManual()
+      navigate(`/stops/${stop.id}`)
+      return
+    }
+
     setActiveStop(stop.id)
     navigate(`/stops/${stop.id}`)
   }
@@ -208,7 +216,7 @@ export function PepperDetailPage() {
         <span className="text-[var(--ink)]">{name}</span>
       </div>
 
-      <div className="grid gap-8 xl:grid-cols-[minmax(0,848px)_320px] xl:items-start">
+      <div className="mx-auto grid max-w-[980px] gap-8 xl:grid-cols-1 xl:items-start">
         <div className="min-w-0 space-y-6">
           <Card>
             <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
@@ -336,7 +344,7 @@ export function PepperDetailPage() {
               </div>
             </div>
             <div className="mt-5 flex flex-wrap items-center gap-3">
-              <ActionButton icon={<Map size={16} />} to="/map">Open on Map</ActionButton>
+              <ActionButton icon={<Map size={16} />} onClick={() => openMap(stop.id)}>Open on Map</ActionButton>
               <button className="inline-flex items-center gap-1 text-[13px] font-medium text-[var(--terracotta)]" onClick={openStop} type="button">
                 Add this stop to my route
               </button>
@@ -348,7 +356,7 @@ export function PepperDetailPage() {
             <h2 className="mt-1 text-2xl font-semibold text-[var(--ink)]">Save and compare</h2>
             <div className="mt-4 flex flex-wrap gap-2">
               <span className="rounded-full bg-[#e2eee3] px-3 py-1.5 text-[12px] font-medium text-[#4e8a5a]">Saved peppers: {savedCount}</span>
-              <span className="rounded-full bg-[#dde9f0] px-3 py-1.5 text-[12px] font-medium text-[#3d6e8c]">Compare: {compareCount || 1} selected</span>
+              <span className="rounded-full bg-[#dde9f0] px-3 py-1.5 text-[12px] font-medium text-[#3d6e8c]">Compare: {compareCount} selected</span>
             </div>
             <div className="mt-5 flex flex-wrap gap-3">
               <ActionButton onClick={() => toggleSavePepper(pepper.id)} tone="primary">{saveLabel}</ActionButton>
@@ -362,12 +370,20 @@ export function PepperDetailPage() {
             <SectionLabel>Optional reading</SectionLabel>
             <h2 className="mt-1 text-2xl font-semibold text-[var(--ink)]">Learn more</h2>
             <p className="mt-2 text-sm text-[#6b6359]">Expand any section for deeper information. All sections are optional.</p>
-            <div className="mt-5 divide-y divide-[#eadfce] rounded-[10px] border border-[#eadfce]">
-              {['Origin and background', 'How it differs from hot peppers', 'Growing notes', 'Best comparison'].map((item) => (
-                <button className="flex h-12 w-full items-center justify-between px-4 text-left text-sm font-medium text-[var(--ink)]" key={item} type="button">
-                  {item}
-                  <ChevronDown size={14} className="text-[#8a7a63]" />
-                </button>
+            <div className="mt-5 divide-y divide-[#eadfce] overflow-hidden rounded-[10px] border border-[#eadfce]">
+              {[
+                ['Origin and background', `${name} is shown as part of the Prigan tasting route so visitors can connect flavor, color, and growing context.`],
+                ['How it differs from hot peppers', `${name} helps visitors compare sweetness, aroma, and heat level without changing the main route.`],
+                ['Growing notes', 'Greenhouse growing conditions can affect color, shape, and heat. Staff guidance is the source of truth during the visit.'],
+                ['Best comparison', 'Compare it with Jalapeno or Habanero to understand how heat and flavor change between varieties.'],
+              ].map(([item, body]) => (
+                <details className="group bg-white" key={item}>
+                  <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-4 py-3 text-left text-sm font-medium text-[var(--ink)]">
+                    {item}
+                    <ChevronDown size={14} className="text-[#8a7a63] transition group-open:rotate-180" />
+                  </summary>
+                  <p className="px-4 pb-4 text-[13px] leading-5 text-[#6b6359]">{body}</p>
+                </details>
               ))}
             </div>
           </Card>
@@ -392,7 +408,7 @@ export function PepperDetailPage() {
           </section>
         </div>
 
-        <aside className="space-y-4 xl:sticky xl:top-24">
+        <aside className="hidden space-y-4 xl:sticky xl:top-24">
           <Card className="p-0">
             <div className="space-y-4 p-4">
               <div className="rounded-[12px] bg-[#e2eee3] p-4">
@@ -428,7 +444,7 @@ export function PepperDetailPage() {
               </div>
               <div className="grid gap-2">
                 <ActionButton icon={<Route size={16} />} onClick={openStop} tone="primary">Open Stop on Route</ActionButton>
-                <ActionButton icon={<Map size={15} />} to="/map">Open on Map</ActionButton>
+                <ActionButton icon={<Map size={15} />} onClick={() => openMap(stop.id)}>Open on Map</ActionButton>
                 <ActionButton onClick={() => addCompareAndMaybeOpen()}>Add to Compare</ActionButton>
                 <ActionButton onClick={() => toggleSavePepper(pepper.id)}>{saveLabel}</ActionButton>
                 <ActionButton icon={<ArrowLeft size={14} />} to="/catalog" tone="ghost">Back to Catalog</ActionButton>
@@ -444,8 +460,8 @@ export function PepperDetailPage() {
                 { label: 'Poblano', level: 1 },
                 { label: 'Jalapeño', level: 2 },
                 { label: 'Habanero', level: 5 },
-              ].map((item) => (
-                <div className={cn('flex items-center justify-between rounded-[10px] px-3 py-2', item.current ? 'bg-[#e2eee3]' : 'bg-[#fbf8f3]')} key={item.label}>
+              ].map((item, index) => (
+                <div className={cn('flex items-center justify-between rounded-[10px] px-3 py-2', item.current ? 'bg-[#e2eee3]' : 'bg-[#fbf8f3]')} key={`${item.label}-${index}`}>
                   <div className="flex min-w-0 items-center gap-2">
                     <span className={cn('truncate text-[13px] font-medium', item.current ? 'text-[#4e8a5a]' : 'text-[#6b6359]')}>{item.label}</span>
                     {item.current ? <span className="rounded-full bg-[#3e7f74] px-2 py-0.5 text-[10px] text-white">This pepper</span> : null}

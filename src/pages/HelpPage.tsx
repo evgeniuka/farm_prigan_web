@@ -21,9 +21,10 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { PageShell } from '../components/layout/PageShell'
 import { useVisit } from '../hooks/useVisit'
+import type { LanguageCode } from '../types/domain'
 import { cn } from '../utils/cn'
 
-type Language = 'EN' | 'עב' | 'AR'
+type Language = LanguageCode
 type TextSize = 'Small' | 'Medium' | 'Large'
 
 function SectionLabel({ children }: { children: ReactNode }) {
@@ -163,7 +164,7 @@ function AccessibilityControls({
     <Card className="min-h-[328px] p-6">
       <AccessibilityRow icon={<Globe2 size={16} />} label="Language">
         <div className="inline-flex rounded-2xl bg-[#e9e2d3] p-1">
-          {(['EN', 'עב', 'AR'] as Language[]).map((option) => (
+          {(['EN', 'HE', 'AR'] as Language[]).map((option) => (
             <SegmentedButton active={language === option} key={option} onClick={() => setLanguage(option)}>
               {option}
             </SegmentedButton>
@@ -308,7 +309,7 @@ function StickyPanel({
           </SecondaryButton>
           <SecondaryButton onClick={onManualMode}>
             <Compass size={15} />
-            Switch to Manual Mode
+            Choose Manually
           </SecondaryButton>
           <SecondaryButton to="/ai">
             <Info size={15} />
@@ -329,9 +330,8 @@ function StickyPanel({
 }
 
 export function HelpPage() {
-  const { chooseManual } = useVisit()
+  const { chooseManual, setLanguage, visit } = useVisit()
   const navigate = useNavigate()
-  const [language, setLanguage] = useState<Language>('EN')
   const [textSize, setTextSize] = useState<TextSize>('Medium')
   const [highContrast, setHighContrast] = useState(true)
   const [readAloud, setReadAloud] = useState(false)
@@ -375,7 +375,7 @@ export function HelpPage() {
             <section className="grid gap-6 xl:grid-cols-[1fr_1fr]">
               <AccessibilityControls
                 highContrast={highContrast}
-                language={language}
+                language={visit.selectedLanguage}
                 readAloud={readAloud}
                 setHighContrast={setHighContrast}
                 setLanguage={setLanguage}
@@ -431,12 +431,12 @@ export function HelpPage() {
             <div className="flex items-start gap-3 rounded-2xl border border-[var(--soft-border)] bg-[#fbf6ec] px-5 py-4 text-sm leading-6 text-[var(--muted)]">
               <Info className="mt-1 shrink-0 text-[#d98a2b]" size={16} />
               <p>
-                This prototype does not require registration. Visit settings are used only for this session, including route progress, saved peppers, compare items, and accessibility controls.
+                This prototype does not require registration. Visit settings are used for this session, including route progress, saved peppers, compare items, accessibility controls, and optional classroom demo analytics when enabled.
               </p>
             </div>
           </main>
 
-          <StickyPanel highContrast={highContrast} language={language} onManualMode={switchToManualMode} readAloud={readAloud} textSize={textSize} />
+          <StickyPanel highContrast={highContrast} language={visit.selectedLanguage} onManualMode={switchToManualMode} readAloud={readAloud} textSize={textSize} />
         </div>
       </div>
     </PageShell>

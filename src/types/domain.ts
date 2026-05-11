@@ -1,4 +1,5 @@
 export type StopType = 'arrival' | 'greenhouse' | 'tasting' | 'shop' | 'support'
+export type LanguageCode = 'EN' | 'HE' | 'AR'
 
 export type Stop = {
   id: string
@@ -48,6 +49,7 @@ export type Pepper = {
 }
 
 export type UserVisit = {
+  selectedLanguage: LanguageCode
   selectedDuration: string
   selectedMode: string
   selectedInterests: string[]
@@ -55,6 +57,7 @@ export type UserVisit = {
   selectedWalkingPreference: string
   selectedComfortNeeds: string[]
   routeAccepted: boolean
+  customRouteStopIds: string[] | null
   activeStopId: string
   visitedStopIds: string[]
   savedPepperIds: string[]

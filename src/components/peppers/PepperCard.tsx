@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { pepperImages } from '../../data/pepperImages'
 import type { Pepper } from '../../types/domain'
 import { cn } from '../../utils/cn'
+import { useMapOverlay } from '../map/useMapOverlay'
 
 const routeLabels: Record<string, string> = {
   'lemon-drop': 'Greenhouse Route · Bay 4',
@@ -45,6 +46,7 @@ export function PepperCard({
   onCompare: () => void
   compareDisabled?: boolean
 }) {
+  const { openMap } = useMapOverlay()
   const heat = getHeatMeta(pepper)
   const heatTone =
     heat.tone === 'red'
@@ -120,9 +122,13 @@ export function PepperCard({
               <MapPin size={12} className="shrink-0" />
               <span className="truncate">{routeLabels[pepper.id]}</span>
             </span>
-            <Link className="shrink-0 text-[11px] font-semibold text-[var(--terracotta)] hover:underline" to="/map">
+            <button
+              className="shrink-0 text-[11px] font-semibold text-[var(--terracotta)] hover:underline"
+              onClick={() => openMap(pepper.routeStopId)}
+              type="button"
+            >
               Map <ChevronRight size={10} className="inline" />
-            </Link>
+            </button>
           </div>
         </div>
 

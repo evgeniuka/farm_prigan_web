@@ -1,21 +1,22 @@
 import { Heart, Route, Trophy } from 'lucide-react'
-import { getStop } from '../../data/helpers'
+import { buildAdaptiveRoute } from '../../data/adaptiveRoute'
+import { getRouteStops } from '../../data/helpers'
 import { peppers } from '../../data/peppers'
-import { mainRoute } from '../../data/routes'
 import { useVisit } from '../../hooks/useVisit'
 import { InfoCard } from '../ui/InfoCard'
 
 export function MyVisitSummary() {
   const { visit } = useVisit()
+  const route = buildAdaptiveRoute(visit)
   const saved = peppers.filter((pepper) => visit.savedPepperIds.includes(pepper.id))
-  const routeStops = mainRoute.stops.map(getStop)
+  const routeStops = getRouteStops(visit)
   const visited = routeStops.filter((stop) => visit.visitedStopIds.includes(stop.id))
 
   return (
     <div className="grid gap-4 md:grid-cols-3">
       <InfoCard icon={<Route size={18} />} title="Accepted route">
-        <p>{visit.routeAccepted ? mainRoute.name : 'Route ready to accept'}</p>
-        <p className="mt-1">{mainRoute.durationMinutes} min / {mainRoute.totalStops} stops</p>
+        <p>{visit.routeAccepted ? route.name : 'Route ready to accept'}</p>
+        <p className="mt-1">{route.durationMinutes} min / {route.totalStops} stops</p>
       </InfoCard>
       <InfoCard icon={<Trophy size={18} />} title="Visited stops">
         <p>{visited.length} of {routeStops.length} completed</p>

@@ -9,7 +9,6 @@ import {
   Eye,
   Flag,
   Heart,
-  Info,
   ListChecks,
   Map,
   MapPin,
@@ -24,9 +23,10 @@ import {
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { PageShell } from '../components/layout/PageShell'
-import { getNextStopId, getPepper, getRouteStops, getStop } from '../data/helpers'
+import { useMapOverlay } from '../components/map/useMapOverlay'
+import { getPepper, getRouteStops } from '../data/helpers'
 import { useVisit } from '../hooks/useVisit'
-import type { Pepper } from '../types/domain'
+import type { Pepper, Stop, UserVisit } from '../types/domain'
 import { cn } from '../utils/cn'
 
 const savedPepperMeta: Record<string, { level: string; score: string; tags: string[]; note?: string }> = {
@@ -115,7 +115,26 @@ function MetricCard({ icon, label, value, detail }: { icon: ReactNode; label: st
   )
 }
 
-function VisitSummarySection({ savedCount, savedNames }: { savedCount: number; savedNames: string }) {
+function VisitSummarySection({
+  activeIndex,
+  currentStop,
+  nextStop,
+  routeStops,
+  savedCount,
+  savedNames,
+  visit,
+}: {
+  activeIndex: number
+  currentStop: Stop
+  nextStop: Stop | null
+  routeStops: Stop[]
+  savedCount: number
+  savedNames: string
+  visit: UserVisit
+}) {
+  const remainingMinutes = routeStops.slice(activeIndex + 1).reduce((total, stop) => total + stop.durationMinutes + stop.walkingMinutesFromPrevious, 0)
+  const routeType = visit.manualMode ? 'Manual Planning' : visit.routeAccepted ? 'AI Recommended' : 'Route ready'
+
   return (
     <SectionCard>
       <SectionOverline>01 · Visit Summary</SectionOverline>
@@ -125,31 +144,24 @@ function VisitSummarySection({ savedCount, savedNames }: { savedCount: number; s
       </div>
 
       <div className="mt-5 flex flex-wrap gap-2">
-        <Chip tone="red">Route in progress</Chip>
-        <Chip tone="gold">Stop 3 of 5</Chip>
-        <Chip tone="cream">~20 min remaining</Chip>
-        <Chip tone="green">AI Recommended</Chip>
+        <Chip tone={visit.finished ? 'green' : 'red'}>{visit.finished ? 'Visit finished' : 'Route in progress'}</Chip>
+        <Chip tone="gold">Stop {activeIndex + 1} of {routeStops.length}</Chip>
+        <Chip tone="cream">{remainingMinutes ? `~${remainingMinutes} min remaining` : 'Final stop'}</Chip>
+        <Chip tone="green">{routeType}</Chip>
       </div>
 
-      <div className="mt-5 grid gap-3 md:grid-cols-4">
-        <MetricCard icon={<Route size={15} />} label="Route progress" value="3 / 5 stops" detail="Next: Tasting GH 1–2" />
-        <MetricCard icon={<Timer size={15} />} label="Time remaining" value="~20 min" detail="Fits your 40–45 min visit" />
+      <div className="mt-5 grid gap-3 md:grid-cols-3">
+        <MetricCard icon={<Route size={15} />} label="Route progress" value={`${activeIndex + 1} / ${routeStops.length} stops`} detail={nextStop ? `Next: ${nextStop.name}` : 'Ready to finish'} />
+        <MetricCard icon={<Timer size={15} />} label="Time remaining" value={remainingMinutes ? `~${remainingMinutes} min` : 'Final stop'} detail={`Current: ${currentStop.shortName}`} />
         <MetricCard icon={<Heart size={15} />} label="Saved peppers" value={`${savedCount} peppers`} detail={savedNames || 'No saved peppers yet'} />
-        <MetricCard icon={<Sparkles size={15} />} label="Route type" value="AI Recommended" detail="Family / Beginner · Mild" />
-      </div>
-
-      <div className="mt-4 flex items-start gap-2 rounded-lg border border-[var(--soft-border)] bg-[#fbf6ec] px-4 py-3 text-sm leading-5 text-[var(--muted)]">
-        <Info className="mt-0.5 shrink-0 text-[#d98a2b]" size={15} />
-        <p>You can continue the route, edit it, or switch to manual mode anytime. You stay in control.</p>
       </div>
     </SectionCard>
   )
 }
 
-function RouteProgressSection({ onContinue }: { onContinue: () => void }) {
-  const routeStops = getRouteStops()
-  const completedCount = 2
-  const progressPercent = Math.round((completedCount / routeStops.length) * 100)
+function RouteProgressSection({ activeIndex, onContinue, routeStops, visit }: { activeIndex: number; onContinue: () => void; routeStops: Stop[]; visit: UserVisit }) {
+  const completedCount = routeStops.filter((stop, index) => visit.visitedStopIds.includes(stop.id) || index < activeIndex).length
+  const progressPercent = Math.round(((activeIndex + 1) / routeStops.length) * 100)
 
   return (
     <SectionCard>
@@ -157,7 +169,7 @@ function RouteProgressSection({ onContinue }: { onContinue: () => void }) {
         <div>
           <SectionOverline>02 · Route Progress</SectionOverline>
           <h2 className="mt-1 text-[22px] font-semibold leading-tight text-[var(--ink)]">Current route</h2>
-          <p className="mt-2 text-sm leading-5 text-[var(--muted)]">Visitor Center → Greenhouse Route → Tasting GH 1–2 → Product Shop</p>
+          <p className="mt-2 text-sm leading-5 text-[var(--muted)]">{routeStops.map((stop) => stop.name).join(' → ')}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <IconButton to="/route">
@@ -187,9 +199,9 @@ function RouteProgressSection({ onContinue }: { onContinue: () => void }) {
 
       <div className="mt-5 divide-y divide-[var(--soft-border)]">
         {routeStops.map((stop, index) => {
-          const isCompleted = index < 2
-          const isCurrent = stop.id === 'greenhouse-route'
-          const isNext = stop.id === 'tasting-gh-1-2'
+          const isCompleted = visit.visitedStopIds.includes(stop.id) || index < activeIndex
+          const isCurrent = stop.id === visit.activeStopId
+          const isNext = index === activeIndex + 1
           const isLast = index === routeStops.length - 1
 
           return (
@@ -224,8 +236,9 @@ function RouteProgressSection({ onContinue }: { onContinue: () => void }) {
                   {isNext ? (
                     <>
                       <TinyBadge tone="gold">Next stop</TinyBadge>
-                      <TinyBadge tone="green">Mild heat</TinyBadge>
-                      <TinyBadge tone="green">Beginner-friendly</TinyBadge>
+                      {stop.tags.slice(0, 2).map((tag) => (
+                        <TinyBadge key={tag} tone="green">{tag}</TinyBadge>
+                      ))}
                     </>
                   ) : null}
                   {!isCompleted && !isCurrent && !isNext ? <TinyBadge>Upcoming</TinyBadge> : null}
@@ -235,27 +248,23 @@ function RouteProgressSection({ onContinue }: { onContinue: () => void }) {
                     <Clock3 size={12} />
                     {stop.durationMinutes} min
                   </span>
-                  {(isCompleted || isCurrent) && <TinyBadge>{isCompleted && index === 0 ? 'Welcome' : isCompleted ? 'Orientation' : 'Learning'}</TinyBadge>}
+                  {(isCompleted || isCurrent) && stop.tags.slice(0, 2).map((tag) => <TinyBadge key={tag}>{tag}</TinyBadge>)}
                   {isNext ? (
                     <>
-                      <TinyBadge>Tasting</TinyBadge>
-                      <span>Tasting</span>
-                      <span>Mild heat</span>
-                      <span>Beginner-friendly</span>
+                      {stop.tags.slice(0, 3).map((tag) => (
+                        <span key={tag}>{tag}</span>
+                      ))}
                     </>
                   ) : null}
                   {isCurrent ? (
                     <>
-                      <span>Learn</span>
-                      <span>8 Bays</span>
-                      <span>Photo spot</span>
+                      {stop.tags.slice(0, 3).map((tag) => (
+                        <span key={tag}>{tag}</span>
+                      ))}
                     </>
                   ) : null}
-                  {!isCompleted && !isCurrent && !isNext ? <TinyBadge>Shop</TinyBadge> : null}
+                  {!isCompleted && !isCurrent && !isNext ? <TinyBadge>{stop.type}</TinyBadge> : null}
                 </div>
-                {isCurrent ? (
-                  <p className="mt-3 text-[11px] italic leading-5 text-[var(--muted)]">↑ 3 min walk · back toward center · face Tasting Point</p>
-                ) : null}
               </div>
 
               <div className="flex items-start gap-2 md:justify-end">
@@ -280,12 +289,31 @@ function RouteProgressSection({ onContinue }: { onContinue: () => void }) {
         })}
       </div>
 
-      <p className="mt-4 text-xs leading-5 text-[var(--muted)]">You can edit, skip, or swap any stop at any time. Manual mode is always available.</p>
     </SectionCard>
   )
 }
 
-function NextActionSection({ onContinue, onChooseManual, onSkip }: { onContinue: () => void; onChooseManual: () => void; onSkip: () => void }) {
+function NextActionSection({
+  currentStop,
+  nextStop,
+  onChooseManual,
+  onContinue,
+  onFinish,
+  onShorten,
+  onSkip,
+  routeStops,
+}: {
+  currentStop: Stop
+  nextStop: Stop | null
+  onChooseManual: () => void
+  onContinue: () => void
+  onFinish: () => void
+  onShorten: () => void
+  onSkip: () => void
+  routeStops: Stop[]
+}) {
+  const targetStop = nextStop ?? currentStop
+
   return (
     <SectionCard className="overflow-hidden p-0">
       <div className="flex items-center justify-between bg-[var(--terracotta)] px-6 py-3 text-xs font-semibold text-white">
@@ -293,40 +321,41 @@ function NextActionSection({ onContinue, onChooseManual, onSkip }: { onContinue:
           <ArrowRight size={14} />
           Next on your route
         </span>
-        <span>3 min walk</span>
+        <span>{nextStop ? `${nextStop.walkingMinutesFromPrevious} min walk` : 'Final step'}</span>
       </div>
       <div className="p-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
-            <SectionOverline>Stop 4 of 5</SectionOverline>
-            <h2 className="mt-1 text-2xl font-semibold text-[var(--ink)]">Tasting GH 1–2</h2>
+            <SectionOverline>{nextStop ? `Stop ${nextStop.order} of ${routeStops.length}` : 'Visit complete'}</SectionOverline>
+            <h2 className="mt-1 text-2xl font-semibold text-[var(--ink)]">{nextStop ? nextStop.name : 'Ready to finish'}</h2>
             <div className="mt-3 flex flex-wrap gap-2">
-              <TinyBadge tone="gold">Tasting</TinyBadge>
-              <TinyBadge tone="green">Mild heat</TinyBadge>
-              <TinyBadge tone="green">Beginner-friendly</TinyBadge>
-              <TinyBadge tone="green">Accessible</TinyBadge>
+              {(nextStop?.tags ?? ['Summary', 'Completed']).slice(0, 4).map((tag) => (
+                <TinyBadge key={tag} tone={tag.includes('Mild') || tag.includes('Family') ? 'green' : 'gold'}>{tag}</TinyBadge>
+              ))}
             </div>
             <div className="mt-4 flex flex-wrap gap-5 text-sm text-[var(--muted)]">
               <span className="inline-flex items-center gap-1.5">
                 <MapPin size={14} />
-                Tasting Zone · Mild & Medium heat
+                {nextStop ? nextStop.description : `Current stop: ${currentStop.name}`}
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <Clock3 size={14} />
-                12 min at this stop
+                {nextStop ? nextStop.durationMinutes : currentStop.durationMinutes} min at this stop
               </span>
             </div>
           </div>
           <div className="text-left md:text-right">
             <p className="text-xs text-[var(--muted)]">Estimated time at stop</p>
-            <p className="text-xl font-semibold text-[var(--ink)]">12 min</p>
+            <p className="text-xl font-semibold text-[var(--ink)]">{nextStop ? nextStop.durationMinutes : currentStop.durationMinutes} min</p>
           </div>
         </div>
 
-        <div className="mt-5 rounded-xl border border-[#c9e2db] bg-[#e1efeb] p-4">
+        <div className="hidden">
           <p className="text-sm font-semibold text-[#245f56]">Recommended because</p>
           <p className="mt-1 text-sm leading-5 text-[var(--ink)]">
-            This stop matches your mild tasting preference, is close to your current location, fits your visit time, and avoids unnecessary walking.
+            {nextStop
+              ? `This stop follows ${currentStop.shortName}, fits your selected visit preferences, and keeps the route visitor-friendly.`
+              : 'You have reached the last route stop. Finish the visit to review your completed route and saved peppers.'}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <TinyBadge tone="green">Matches spice comfort</TinyBadge>
@@ -342,25 +371,29 @@ function NextActionSection({ onContinue, onChooseManual, onSkip }: { onContinue:
             onClick={onContinue}
             type="button"
           >
-            Continue to Tasting GH 1–2
+            {nextStop ? `Continue to ${nextStop.shortName}` : 'Finish Visit'}
             <ArrowRight size={15} />
           </button>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Link className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-[var(--soft-border)] bg-white text-xs font-semibold text-[var(--ink)] hover:bg-[var(--cream-100)]" to="/stops/tasting-gh-1-2">
+            <Link className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-[var(--soft-border)] bg-white text-xs font-semibold text-[var(--ink)] hover:bg-[var(--cream-100)]" to={`/stops/${targetStop.id}`}>
               <Eye size={14} />
               Open Stop Details
             </Link>
             <button className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-[var(--soft-border)] bg-white text-xs font-semibold text-[var(--ink)] hover:bg-[var(--cream-100)]" onClick={onSkip} type="button">
               <ArrowRight size={14} />
-              Skip This Stop
+              Skip Stop
             </button>
             <button className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-[var(--soft-border)] bg-white text-xs font-semibold text-[var(--ink)] hover:bg-[var(--cream-100)]" onClick={onChooseManual} type="button">
               <PenLine size={14} />
               Choose Manually
             </button>
-            <button className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-[var(--soft-border)] bg-white text-xs font-semibold text-[var(--ink)] hover:bg-[var(--cream-100)]" onClick={onChooseManual} type="button">
+            <button className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-[var(--soft-border)] bg-white text-xs font-semibold text-[var(--ink)] hover:bg-[var(--cream-100)]" onClick={onShorten} type="button">
               <Compass size={14} />
-              Switch to Manual Mode
+              Shorten Route
+            </button>
+            <button className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-[#efc2b4] bg-white text-xs font-semibold text-[var(--terracotta)] hover:bg-[#fff0eb]" onClick={onFinish} type="button">
+              <Flag size={14} />
+              Finish Visit
             </button>
           </div>
         </div>
@@ -443,10 +476,6 @@ function SavedPeppersSection({ savedPeppers, onCompare, onRemove }: { savedPeppe
         </div>
       )}
 
-      <div className="mt-4 flex items-start gap-2 rounded-lg border border-[var(--soft-border)] bg-[#fbf6ec] px-4 py-3 text-sm leading-5 text-[var(--muted)]">
-        <Info className="mt-0.5 shrink-0 text-[#d98a2b]" size={15} />
-        <p>Peppers you save during your visit appear here. You can compare them or view full details.</p>
-      </div>
     </SectionCard>
   )
 }
@@ -504,11 +533,15 @@ function UserControlsSection({
   onChooseManual,
   onEditRoute,
   onFinish,
+  onOpenMap,
+  onShorten,
 }: {
   onContinue: () => void
   onChooseManual: () => void
   onEditRoute: () => void
   onFinish: () => void
+  onOpenMap: () => void
+  onShorten: () => void
 }) {
   return (
     <SectionCard>
@@ -519,10 +552,10 @@ function UserControlsSection({
           <ArrowRight size={15} />
           Continue Route
         </button>
-        <Link className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[var(--soft-border)] bg-white px-4 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--cream-100)]" to="/map">
+        <button className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[var(--soft-border)] bg-white px-4 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--cream-100)]" onClick={onOpenMap} type="button">
           <Map size={15} />
           Open Map
-        </Link>
+        </button>
         <button className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[var(--soft-border)] bg-white px-4 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--cream-100)]" onClick={onEditRoute} type="button">
           <Edit3 size={15} />
           Edit Route
@@ -530,6 +563,10 @@ function UserControlsSection({
         <button className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[var(--soft-border)] bg-white px-4 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--cream-100)]" onClick={onChooseManual} type="button">
           <Compass size={15} />
           Choose Manually
+        </button>
+        <button className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[var(--soft-border)] bg-white px-4 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--cream-100)]" onClick={onShorten} type="button">
+          <Timer size={15} />
+          Shorten Route
         </button>
         <Link className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[var(--soft-border)] bg-white px-4 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--cream-100)]" to="/route">
           <ArrowLeft size={15} />
@@ -546,24 +583,39 @@ function UserControlsSection({
 }
 
 function SidebarPanel({
+  activeIndex,
+  currentStop,
+  nextStop,
   savedCount,
   onChooseManual,
   onContinue,
   onEditRoute,
   onFinish,
+  onOpenMap,
+  routeStops,
+  visit,
 }: {
+  activeIndex: number
+  currentStop: Stop
+  nextStop: Stop | null
   savedCount: number
   onChooseManual: () => void
   onContinue: () => void
   onEditRoute: () => void
   onFinish: () => void
+  onOpenMap: () => void
+  routeStops: Stop[]
+  visit: UserVisit
 }) {
+  const targetStop = nextStop ?? currentStop
+  const routeType = visit.manualMode ? 'Manual Planning' : visit.routeAccepted ? 'AI Recommended' : 'Route ready'
+
   return (
     <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
       <div className="overflow-hidden rounded-2xl border border-[var(--soft-border)] bg-white shadow-[0_12px_32px_rgba(74,51,29,0.06)]">
         <div className="bg-[var(--terracotta)] px-5 py-4 text-white">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.02em]">Next on your route</p>
-          <p className="mt-1 text-sm">Stop 4 of 5</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.02em]">{nextStop ? 'Next on your route' : 'Current route status'}</p>
+          <p className="mt-1 text-sm">{nextStop ? `Stop ${nextStop.order} of ${routeStops.length}` : 'Final stop'}</p>
         </div>
         <div className="p-5">
           <div className="flex gap-3">
@@ -571,27 +623,31 @@ function SidebarPanel({
               <MapPin size={17} />
             </span>
             <div>
-              <h3 className="font-semibold text-[var(--ink)]">Tasting GH 1–2</h3>
-              <p className="mt-1 text-xs leading-5 text-[var(--muted)]">3 min walk · 12 min at stop</p>
+              <h3 className="font-semibold text-[var(--ink)]">{targetStop.name}</h3>
+              <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
+                {nextStop ? `${nextStop.walkingMinutesFromPrevious} min walk · ${nextStop.durationMinutes} min at stop` : 'Ready to finish the visit'}
+              </p>
               <div className="mt-2 flex flex-wrap gap-2">
-                <TinyBadge tone="gold">Tasting</TinyBadge>
-                <TinyBadge tone="green">Mild heat</TinyBadge>
-                <TinyBadge tone="green">Beginner-friendly</TinyBadge>
+                {targetStop.tags.slice(0, 3).map((tag) => (
+                  <TinyBadge key={tag} tone={tag.includes('Mild') || tag.includes('Family') ? 'green' : 'gold'}>{tag}</TinyBadge>
+                ))}
               </div>
             </div>
           </div>
           <div className="mt-4 rounded-xl border border-[#c9e2db] bg-[#e1efeb] p-3 text-xs leading-5 text-[#245f56]">
-            Recommended: mild spice preference, close to current location, fits visit time.
+            {nextStop
+              ? `Recommended: ${nextStop.shortName} follows ${currentStop.shortName} and fits your current route.`
+              : 'You are at the final route step. Finish when you are ready.'}
           </div>
           <div className="mt-4 grid gap-3">
             <button className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--terracotta)] px-4 text-sm font-semibold text-white hover:bg-[var(--terracotta-dark)]" onClick={onContinue} type="button">
-              Continue to Tasting GH 1–2
+              {nextStop ? `Continue to ${nextStop.shortName}` : 'Finish Visit'}
             </button>
             <div className="grid grid-cols-2 gap-2">
-              <Link className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-[var(--soft-border)] bg-white text-xs font-semibold text-[var(--ink)] hover:bg-[var(--cream-100)]" to="/map">
+              <button className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-[var(--soft-border)] bg-white text-xs font-semibold text-[var(--ink)] hover:bg-[var(--cream-100)]" onClick={onOpenMap} type="button">
                 Open Map
-              </Link>
-              <Link className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-[var(--soft-border)] bg-white text-xs font-semibold text-[var(--ink)] hover:bg-[var(--cream-100)]" to="/stops/tasting-gh-1-2">
+              </button>
+              <Link className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-[var(--soft-border)] bg-white text-xs font-semibold text-[var(--ink)] hover:bg-[var(--cream-100)]" to={`/stops/${targetStop.id}`}>
                 Stop Details
               </Link>
             </div>
@@ -603,11 +659,12 @@ function SidebarPanel({
         <p className="mb-4 text-xs font-semibold uppercase tracking-[0.02em] text-[var(--muted)]">Your selections</p>
         {[
           ['Total duration', '40–45 min'],
-          ['Stops', '4 main stops'],
+          ['Stops', `${routeStops.length} stops`],
           ['Total walk', '~10 min · 450 m'],
           ['Visit mode', 'Family / Beginner'],
           ['Spice level', 'Mild'],
-          ['Route type', 'AI Recommended'],
+          ['Current stop', `${activeIndex + 1}. ${currentStop.shortName}`],
+          ['Route type', routeType],
           ['Saved peppers', `${savedCount} saved`],
         ].map(([label, value]) => (
           <div className="flex items-center justify-between gap-3 py-2 text-xs" key={label}>
@@ -625,7 +682,7 @@ function SidebarPanel({
         {[
           ['Edit Route Preferences', onEditRoute],
           ['Replan Remaining Route', onEditRoute],
-          ['Switch to Manual Mode', onChooseManual],
+          ['Choose Manually', onChooseManual],
         ].map(([label, handler]) => (
           <button
             className="mb-2 flex h-10 w-full items-center justify-between rounded-lg border border-[var(--soft-border)] bg-white px-3 text-left text-xs font-semibold text-[var(--ink)] hover:bg-[var(--cream-100)]"
@@ -657,31 +714,53 @@ export function MyVisitPage() {
     continueToNextStop,
     editPreferences,
     finishVisit,
+    shortenRoute,
     skipStop,
     toggleComparePepper,
     toggleSavePepper,
     visit,
   } = useVisit()
   const navigate = useNavigate()
+  const { openMap } = useMapOverlay()
+  const routeStops = getRouteStops(visit)
+  const activeIndex = Math.max(0, routeStops.findIndex((stop) => stop.id === visit.activeStopId))
+  const currentStop = routeStops[activeIndex]
+  const nextStop = routeStops[activeIndex + 1] ?? null
   const savedPeppers = visit.savedPepperIds.map(getPepper)
   const displayedSavedPeppers = savedPeppers
   const savedNames = displayedSavedPeppers.map((pepper) => pepper.name).join(' · ')
-  const nextStop = getStop(getNextStopId(visit.activeStopId))
 
   const continueRoute = () => {
+    if (!nextStop) {
+      finishCurrentVisit()
+      return
+    }
+
     continueToNextStop()
     navigate('/route')
   }
 
   const skipNextStop = () => {
+    if (!nextStop) {
+      finishCurrentVisit()
+      return
+    }
+
     skipStop()
+    navigate('/route')
+  }
+
+  const shortenCurrentRoute = () => {
+    shortenRoute()
     navigate('/route')
   }
 
   const chooseManualRoute = () => {
     chooseManual()
-    navigate('/map')
+    openMap(visit.activeStopId)
   }
+
+  const openCurrentMap = () => openMap(visit.activeStopId)
 
   const editRoute = () => {
     editPreferences()
@@ -708,26 +787,36 @@ export function MyVisitPage() {
           <span className="font-semibold text-[var(--ink)]">My Visit</span>
         </nav>
 
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,848px)_320px]">
+        <div className="mx-auto grid max-w-[980px] gap-8 lg:grid-cols-1">
           <div className="space-y-6">
-            <VisitSummarySection savedCount={displayedSavedPeppers.length} savedNames={savedNames} />
-            <RouteProgressSection onContinue={continueRoute} />
-            <NextActionSection onChooseManual={chooseManualRoute} onContinue={continueRoute} onSkip={skipNextStop} />
+            <VisitSummarySection activeIndex={activeIndex} currentStop={currentStop} nextStop={nextStop} routeStops={routeStops} savedCount={displayedSavedPeppers.length} savedNames={savedNames} visit={visit} />
+            <RouteProgressSection activeIndex={activeIndex} onContinue={continueRoute} routeStops={routeStops} visit={visit} />
+            <NextActionSection currentStop={currentStop} nextStop={nextStop} onChooseManual={chooseManualRoute} onContinue={continueRoute} onFinish={finishCurrentVisit} onShorten={shortenCurrentRoute} onSkip={skipNextStop} routeStops={routeStops} />
             <SavedPeppersSection onCompare={comparePepper} onRemove={toggleSavePepper} savedPeppers={displayedSavedPeppers} />
-            <AiSummarySection />
             <SafetySection />
-            <UserControlsSection onChooseManual={chooseManualRoute} onContinue={continueRoute} onEditRoute={editRoute} onFinish={finishCurrentVisit} />
+            <div className="hidden">
+              <AiSummarySection />
+              <UserControlsSection onChooseManual={chooseManualRoute} onContinue={continueRoute} onEditRoute={editRoute} onFinish={finishCurrentVisit} onOpenMap={openCurrentMap} onShorten={shortenCurrentRoute} />
+            </div>
           </div>
-          <SidebarPanel
-            onChooseManual={chooseManualRoute}
-            onContinue={continueRoute}
-            onEditRoute={editRoute}
-            onFinish={finishCurrentVisit}
-            savedCount={displayedSavedPeppers.length}
-          />
+          <div className="hidden">
+            <SidebarPanel
+              activeIndex={activeIndex}
+              currentStop={currentStop}
+              nextStop={nextStop}
+              onChooseManual={chooseManualRoute}
+              onContinue={continueRoute}
+              onEditRoute={editRoute}
+              onFinish={finishCurrentVisit}
+              onOpenMap={openCurrentMap}
+              routeStops={routeStops}
+              savedCount={displayedSavedPeppers.length}
+              visit={visit}
+            />
+          </div>
         </div>
 
-        <p className="sr-only">Next route stop is {nextStop.name}.</p>
+        <p className="sr-only">Next route stop is {nextStop?.name ?? 'finish visit'}.</p>
       </div>
     </PageShell>
   )

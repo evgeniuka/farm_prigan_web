@@ -1,12 +1,11 @@
 import { Link } from 'react-router-dom'
-import { getNextStopId, getStop } from '../../data/helpers'
-import { mainRoute } from '../../data/routes'
+import { getNextStopId, getRouteStops } from '../../data/helpers'
 import { useVisit } from '../../hooks/useVisit'
 
 export function FarmMap({ compact = false }: { compact?: boolean }) {
   const { visit, setActiveStop } = useVisit()
-  const routeStops = mainRoute.stops.map(getStop)
-  const nextStopId = getNextStopId(visit.activeStopId)
+  const routeStops = getRouteStops(visit)
+  const nextStopId = getNextStopId(visit.activeStopId, visit)
   const polyline = routeStops.map((stop) => `${stop.mapPosition.x},${stop.mapPosition.y}`).join(' ')
 
   return (
@@ -53,14 +52,14 @@ export function FarmMap({ compact = false }: { compact?: boolean }) {
       </div>
       {!compact ? (
         <div className="grid gap-2 p-4 md:grid-cols-2">
-          {routeStops.map((stop) => (
+          {routeStops.map((stop, index) => (
             <button
               className={`rounded-lg border px-3 py-2 text-left text-sm ${stop.id === visit.activeStopId ? 'border-[var(--terracotta)] bg-[#fff1ed]' : 'border-[var(--soft-border)] bg-white hover:bg-[var(--cream-100)]'}`}
               key={stop.id}
               onClick={() => setActiveStop(stop.id)}
               type="button"
             >
-              <span className="font-semibold text-[var(--ink)]">{stop.order}. {stop.shortName}</span>
+              <span className="font-semibold text-[var(--ink)]">{index + 1}. {stop.shortName}</span>
               <span className="block text-xs text-[var(--muted)]">{stop.tags.slice(0, 2).join(' / ')}</span>
             </button>
           ))}

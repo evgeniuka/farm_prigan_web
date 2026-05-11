@@ -148,7 +148,7 @@ function InputsSection() {
         </div>
         <div className="mt-5 flex items-start gap-3 rounded-xl bg-[#eaf4f8] px-4 py-3 text-sm font-semibold text-[#3d6e8c]">
           <Info className="mt-0.5 shrink-0" size={16} />
-          <span>Only information from this visit session is used. No personal data is collected or stored.</span>
+          <span>No account or personal history is needed. Classroom demo analytics may be enabled only to show aggregate prototype activity.</span>
         </div>
       </SectionCard>
     </section>
@@ -287,7 +287,7 @@ function ControlSection({ onManual }: { onManual: () => void }) {
           </TinyButton>
           <TinyButton onClick={onManual}>
             <Compass size={15} />
-            Switch to manual mode
+            Choose manually
           </TinyButton>
           <TinyButton to="/map">
             <Map size={15} />
@@ -349,7 +349,7 @@ function PrivacySection() {
             <ShieldCheck size={20} />
           </span>
           <p className="text-[15px] leading-6 text-[var(--muted)]">
-            This prototype does not require registration. Visit data is used only to support the current session, such as route progress, saved peppers, and selected preferences.
+            This prototype does not require registration. Visit data is used to support the current session, such as route progress, saved peppers, selected preferences, and optional classroom demo analytics when enabled.
           </p>
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -437,7 +437,7 @@ function Sidebar({ onManual }: { onManual: () => void }) {
           </TinyButton>
           <TinyButton onClick={onManual}>
             <Compass size={15} />
-            Switch to Manual Mode
+            Choose Manually
           </TinyButton>
           <TinyButton to="/my-visit">
             <Heart size={15} />

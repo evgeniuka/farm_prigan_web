@@ -19,7 +19,6 @@ const heatFilters = [
 const colorFilters = ['Yellow', 'Red', 'Green', 'Orange']
 const suitabilityFilters = ['Good for tasting', 'Good for learning', 'Beginner-friendly', 'In My Visit']
 const recommendedIds = ['lemon-drop', 'jalapeno']
-const defaultSidebarSavedIds = ['jalapeno', 'sweet-pepper']
 
 function normalize(value: string) {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
@@ -125,7 +124,7 @@ export function CatalogPage() {
   const [colorFilter, setColorFilter] = useState<string | null>(null)
   const [suitabilityFilter, setSuitabilityFilter] = useState<string | null>(null)
 
-  const savedPepperIds = visit.savedPepperIds.length ? visit.savedPepperIds : defaultSidebarSavedIds
+  const savedPepperIds = visit.savedPepperIds
   const savedPeppers = peppers.filter((pepper) => savedPepperIds.includes(pepper.id)).slice(0, 2)
   const comparedCount = visit.comparedPepperIds.length
 
@@ -162,7 +161,7 @@ export function CatalogPage() {
 
   return (
     <PageShell className="py-7 md:py-7">
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1052px)_300px] xl:items-start">
+      <div className="mx-auto grid max-w-[1120px] gap-6 xl:grid-cols-1 xl:items-start">
         <div className="min-w-0 space-y-5">
           <section className="rounded-[8px] border border-[#e8e1d3] bg-[#fbf8f3] px-5 py-5 shadow-[0_12px_30px_rgba(74,51,29,0.05)] md:px-6">
             <p className="text-[11px] font-semibold uppercase tracking-normal text-[var(--terracotta)]">Prigan Farm · Pepper Catalog</p>
@@ -319,7 +318,7 @@ export function CatalogPage() {
           </section>
         </div>
 
-        <aside className="space-y-4 xl:sticky xl:top-24">
+        <aside className="hidden space-y-4 xl:sticky xl:top-24">
           <section className="overflow-hidden rounded-[8px] border border-[#e8e1d3] bg-white shadow-[0_10px_26px_rgba(74,51,29,0.06)]">
             <div className="border-b border-[#eadfce] bg-[#fbf8f3] px-4 py-3">
               <h2 className="flex items-center gap-2 text-sm font-semibold text-[var(--ink)]">

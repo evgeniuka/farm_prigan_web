@@ -9,5 +9,10 @@ export const routeImages: Record<string, string> = {
   'greenhouse-entry': greenhouseEntry,
   'greenhouse-route': greenhouseRoute,
   'tasting-gh-1-2': tastingGh12,
+  'tasting-gh-3-4': tastingGh12,
   'product-shop': productShop,
+  'seedling-nursery': greenhouseEntry,
+  'color-pepper-row': greenhouseRoute,
+  'shade-rest-area': visitorCenter,
+  'packing-demo': productShop,
 }

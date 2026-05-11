@@ -17,9 +17,11 @@ import {
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { getNextStopId } from '../../data/helpers'
+import { getNextStopId, getRouteStops } from '../../data/helpers'
 import { routeImages } from '../../data/routeImages'
 import { useVisit } from '../../hooks/useVisit'
+import { UnifiedFarmMap } from '../map/UnifiedFarmMap'
+import { useMapOverlay } from '../map/useMapOverlay'
 import { Button } from '../ui/Button'
 
 type PillTone = 'neutral' | 'red' | 'green' | 'blue' | 'gold'
@@ -30,7 +32,7 @@ const figmaLiveRoutePlan = {
   spiceLevel: 'Mild',
 }
 
-const routeSummary = ['Visitor Center', 'Greenhouse Route', 'Tasting GH 1–2', 'Product Shop']
+const routeSummary = ['Visitor Center', 'Greenhouse Entry', 'Greenhouse Route', 'Tasting GH 1-2', 'Product Shop']
 
 const sequenceRows = [
   {
@@ -122,65 +124,52 @@ function IconStat({ icon, children }: { icon: ReactNode; children: ReactNode }) 
   return <span className="inline-flex items-center gap-[5px] text-[13px] leading-5 text-[#8a7a63]">{icon}{children}</span>
 }
 
-function FitDots({ size = 6 }: { size?: 4 | 6 }) {
-  return (
-    <span className="inline-flex justify-center gap-0.5">
-      {[0, 1, 2, 3].map((dot) => (
-        <span className="rounded-full bg-[#3e7f74]" key={dot} style={{ height: size, width: size }} />
-      ))}
-    </span>
-  )
-}
-
 function RouteContextBar() {
+  const { visit } = useVisit()
+  const routeStops = getRouteStops()
+  const currentIndex = Math.max(0, routeStops.findIndex((stop) => stop.id === visit.activeStopId))
+  const currentStop = routeStops[currentIndex]
+  const nextStop = routeStops[currentIndex + 1]
+  const progressPercent = Math.round(((currentIndex + 1) / routeStops.length) * 100)
+
   return (
     <Panel className="p-7">
       <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0">
           <p className="text-[11px] font-medium uppercase leading-4 tracking-[0.6px] text-[#c04a2b]">AI · Live Route</p>
           <h1 className="mt-3 text-[26px] font-semibold leading-[31px] text-[#2a2420]">Follow Your Route</h1>
-          <p className="mt-1.5 max-w-[610px] text-sm leading-[21px] text-[#6b6359]">
-            Built from your time, tasting preference, and comfort level. You can edit or override any part.
-          </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <HeaderChip icon={<Clock size={13} />}>{figmaLiveRoutePlan.duration}</HeaderChip>
-            <HeaderChip icon={<MapPin size={13} />}>4 stops</HeaderChip>
+            <HeaderChip icon={<MapPin size={13} />}>{routeStops.length} stops</HeaderChip>
             <HeaderChip icon={<Waypoints size={13} />}>Short walks</HeaderChip>
-            <HeaderChip><span className="h-1.5 w-1.5 rounded-full bg-[#c04a2b]" />AI route active</HeaderChip>
           </div>
-        </div>
-
-        <div className="w-[88px] shrink-0 rounded-[10px] border border-[#b4d4cb] bg-[#e8f2ef] px-4 py-2 text-center text-[#2a6b61]">
-          <p className="text-[22px] font-bold leading-[22px]">High</p>
-          <p className="mt-0.5 text-[10px] font-medium uppercase leading-[15px] tracking-[0.3px] text-[#3e7f74]">Route fit</p>
-          <div className="mt-1.5"><FitDots /></div>
         </div>
       </div>
 
       <div className="mt-5 border-t border-[#e8e1d3] pt-4">
         <div className="mb-2.5 flex justify-between text-xs leading-[18px] text-[#8a7a63]">
           <span>Route progress</span>
-          <span className="text-[#c04a2b]">Stop 3 of 5</span>
+          <span className="text-[#c04a2b]">Stop {currentIndex + 1} of {routeStops.length}</span>
         </div>
         <div className="h-[5px] overflow-hidden rounded-full bg-[#e8e1d3]">
-          <div className="h-full w-1/2 bg-[#c04a2b]" />
+          <div className="h-full bg-[#c04a2b]" style={{ width: `${progressPercent}%` }} />
         </div>
         <div className="mt-2 grid grid-cols-5 text-center text-[10px] leading-[15px] text-[#8a7a63]">
           {['VC', 'GH Entry', 'GH Route', 'Tasting', 'Shop'].map((label, index) => (
             <div className="flex flex-col items-center gap-[3px]" key={label}>
-              <span className={`h-2 w-2 rounded-full ${index <= 2 ? 'bg-[#3e7f74]' : 'bg-[#e8e1d3]'}`} />
+              <span className={`h-2 w-2 rounded-full ${index <= currentIndex ? 'bg-[#3e7f74]' : 'bg-[#e8e1d3]'}`} />
               {label}
             </div>
           ))}
         </div>
       </div>
 
-      <div className="mt-5 rounded-[10px] border border-[#e8e1d3] bg-[#f2ede4] px-4 py-3">
-        <p className="text-xs leading-[18px] text-[#8a7a63]">Route sequence · 4 stops</p>
+      <div className="hidden">
+        <p className="text-xs leading-[18px] text-[#8a7a63]">Route sequence · {routeStops.length} stops</p>
         <p className="mt-1 text-[13px] leading-5 text-[#6b6359]">
           {routeSummary.map((item, index) => (
             <span key={item}>
-              <span className={item === 'Greenhouse Route' ? 'font-semibold text-[#3e7f74]' : item === 'Tasting GH 1–2' ? 'font-medium text-[#c04a2b]' : undefined}>
+              <span className={item === currentStop.name ? 'font-semibold text-[#3e7f74]' : item === nextStop?.name ? 'font-medium text-[#c04a2b]' : undefined}>
                 {item}
               </span>
               {index < routeSummary.length - 1 ? <span className="px-1.5 text-[#d6cdbb]">→</span> : null}
@@ -193,6 +182,18 @@ function RouteContextBar() {
 }
 
 function CurrentStopCard() {
+  const { visit } = useVisit()
+  const routeStops = getRouteStops()
+  const currentIndex = Math.max(0, routeStops.findIndex((stop) => stop.id === visit.activeStopId))
+  const currentStop = routeStops[currentIndex]
+  const locationLabel = currentStop.type === 'tasting'
+    ? 'Tasting Zone · Mild & Medium heat'
+    : currentStop.type === 'shop'
+      ? 'Product area · Exit side'
+      : currentStop.type === 'arrival'
+        ? 'Main entrance · Visitor area'
+        : 'Greenhouse Zone · West side'
+
   return (
     <Panel className="p-6">
       <div className="flex gap-4">
@@ -200,19 +201,19 @@ function CurrentStopCard() {
           <Check size={15} />
         </span>
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase leading-4 tracking-[0.5px] text-[#3e7f74]">You are here · Stop 3 of 5</p>
+          <p className="text-[11px] font-semibold uppercase leading-4 tracking-[0.5px] text-[#3e7f74]">You are here · Stop {currentIndex + 1} of {routeStops.length}</p>
           <div className="mt-1 flex flex-wrap items-center gap-2">
-            <h2 className="text-[22px] font-semibold leading-[27px] text-[#2a2420]">Greenhouse Route</h2>
-            <TinyPill tone="blue">Accessible ♿</TinyPill>
+            <h2 className="text-[22px] font-semibold leading-[27px] text-[#2a2420]">{currentStop.name}</h2>
+            <TinyPill tone="blue">Accessible</TinyPill>
           </div>
           <div className="mt-2 flex flex-wrap gap-4">
-            <IconStat icon={<MapPin size={12} />}>Greenhouse Zone · West side</IconStat>
-            <IconStat icon={<Clock size={12} />}>8 bays · Active area</IconStat>
+            <IconStat icon={<MapPin size={12} />}>{locationLabel}</IconStat>
+            <IconStat icon={<Clock size={12} />}>{currentStop.durationMinutes} min · Active stop</IconStat>
           </div>
           <div className="mt-3 flex flex-wrap gap-1.5">
-            <TinyPill>Learn</TinyPill>
-            <TinyPill>8 Bays</TinyPill>
-            <TinyPill>Photo spot</TinyPill>
+            {currentStop.tags.map((tag) => (
+              <TinyPill key={tag}>{tag}</TinyPill>
+            ))}
           </div>
         </div>
       </div>
@@ -221,8 +222,25 @@ function CurrentStopCard() {
 }
 
 function NextStopHeroCard() {
-  const { continueToNextStop, skipStop, chooseManual } = useVisit()
+  const { continueToNextStop, skipStop, chooseManual, finishVisit, shortenRoute, visit } = useVisit()
   const navigate = useNavigate()
+  const { openMap } = useMapOverlay()
+  const routeStops = getRouteStops()
+  const currentIndex = Math.max(0, routeStops.findIndex((stop) => stop.id === visit.activeStopId))
+  const currentStop = routeStops[currentIndex]
+  const nextStop = routeStops[currentIndex + 1]
+  const hasNextStop = Boolean(nextStop)
+
+  const continueRoute = () => {
+    if (!hasNextStop) {
+      finishVisit()
+      navigate('/finish')
+      return
+    }
+
+    continueToNextStop()
+    navigate('/route')
+  }
 
   return (
     <section className="overflow-hidden rounded-[18px] border-2 border-[#c04a2b] bg-white">
@@ -233,38 +251,34 @@ function NextStopHeroCard() {
         </span>
         <span className="inline-flex h-[22px] items-center gap-1 rounded-full bg-white/20 px-2.5 text-[11px] font-medium leading-4">
           <Waypoints size={11} />
-          3 min walk
+          {nextStop ? `${nextStop.walkingMinutesFromPrevious} min walk` : 'Final stop'}
         </span>
       </div>
 
       <div className="p-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">
-            <p className="text-[11px] font-medium uppercase leading-4 tracking-[0.5px] text-[#a03a1e]">Stop 4 of 5</p>
+            <p className="text-[11px] font-medium uppercase leading-4 tracking-[0.5px] text-[#a03a1e]">{nextStop ? `Stop ${nextStop.order} of ${routeStops.length}` : 'Route complete'}</p>
             <div className="mt-0.5 flex flex-wrap items-center gap-2">
-              <h2 className="text-[22px] font-semibold leading-[26px] text-[#2a2420]">Tasting Point — GH 1 & 2</h2>
-              <TinyPill tone="red">Tasting</TinyPill>
+              <h2 className="text-[22px] font-semibold leading-[26px] text-[#2a2420]">{nextStop?.name ?? 'Finish Visit'}</h2>
+              <TinyPill tone="red">{nextStop?.type === 'shop' ? 'Final stop' : nextStop?.type === 'tasting' ? 'Tasting' : 'Next stop'}</TinyPill>
             </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              <TinyPill tone="gold">Mild heat</TinyPill>
-              <TinyPill>Beginner-friendly</TinyPill>
-              <TinyPill tone="blue">Accessible ♿</TinyPill>
+              {(nextStop?.tags ?? ['Summary']).slice(0, 3).map((tag) => (
+                <TinyPill key={tag} tone={tag.includes('Mild') || tag.includes('Family') ? 'gold' : 'neutral'}>{tag}</TinyPill>
+              ))}
+              <TinyPill tone="blue">Accessible</TinyPill>
             </div>
             <div className="mt-3 flex flex-wrap gap-4">
-              <IconStat icon={<Waypoints size={12} />}>3 min walk from here</IconStat>
-              <IconStat icon={<Clock size={12} />}>12 min at stop</IconStat>
-              <IconStat icon={<MapPin size={12} />}>Tasting Zone · Mild & Medium heat</IconStat>
+              <IconStat icon={<Waypoints size={12} />}>{nextStop ? `${nextStop.walkingMinutesFromPrevious} min walk from here` : 'No more walking'}</IconStat>
+              <IconStat icon={<Clock size={12} />}>{nextStop ? `${nextStop.durationMinutes} min at stop` : 'Visit summary'}</IconStat>
+              <IconStat icon={<MapPin size={12} />}>{nextStop ? nextStop.description : 'Review saved peppers and finish'}</IconStat>
             </div>
           </div>
 
-          <div className="w-[79px] shrink-0 rounded-[10px] border border-[#b4d4cb] bg-[#e8f2ef] px-3 py-2 text-center text-[#2a6b61]">
-            <p className="text-[13px] font-semibold leading-5">Route fit</p>
-            <p className="text-base font-bold leading-6">High</p>
-            <div className="mt-0.5"><FitDots size={4} /></div>
-          </div>
         </div>
 
-        <div className="mt-4 rounded-[12px] border border-[#b4d4cb] bg-[#e1efeb] px-4 py-3">
+        <div className="hidden">
           <div className="flex gap-3">
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#3e7f74] text-white">
               <Sparkles size={13} />
@@ -272,13 +286,15 @@ function NextStopHeroCard() {
             <div className="min-w-0">
               <p className="text-[13px] font-semibold leading-5 text-[#2a2420]">Recommended because</p>
               <p className="mt-1 text-[13px] leading-5 text-[#4a6359]">
-                This next stop matches your mild tasting preference, is close to your current location, fits your visit time, and avoids unnecessary walking.
+                {nextStop
+                  ? `This next stop follows naturally after ${currentStop.shortName}, fits your visit time, and keeps the route visitor-friendly.`
+                  : 'You have reached the final route step. Finish the visit to review your saved peppers and completed stops.'}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="mt-4">
+        <div className="hidden">
           <p className="text-xs font-semibold uppercase leading-[18px] tracking-[0.3px] text-[#6b6359]">Why this stop?</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {['Matches spice comfort', 'Closest to you', 'Fits visit time', 'No long walk'].map((label) => (
@@ -291,64 +307,82 @@ function NextStopHeroCard() {
           <MapPin className="mt-0.5 shrink-0 text-[#8a5a2b]" size={14} />
           <p>
             <span className="font-semibold text-[#8a5a2b]">Walking cue: </span>
-            Walk back toward center from the greenhouse bays. Tasting Point is marked with a blue tasting sign — 3 min from here.
+            {nextStop
+              ? `${nextStop.walkingMinutesFromPrevious} min from ${currentStop.shortName}. Follow visitor signs and avoid restricted staff paths.`
+              : 'You can finish now or return to any previous screen from My Visit.'}
           </p>
         </div>
 
         <Button
           className="mt-5 h-12 w-full rounded-[12px] bg-[#c04a2b] text-[15px]"
           icon={<ArrowRight size={16} />}
-          onClick={() => {
-            const nextId = continueToNextStop()
-            navigate(`/stops/${nextId}`)
-          }}
+          onClick={continueRoute}
         >
-          Continue to Tasting Point
+          {nextStop ? `Continue to ${nextStop.shortName}` : 'Finish Visit'}
         </Button>
 
         <div className="mt-2.5 grid gap-2 md:grid-cols-2">
-          <Button className="h-10 rounded-[10px] bg-[#fbf8f3] text-[13px] font-medium text-[#6b6359]" icon={<Map size={14} />} onClick={() => navigate('/stops/greenhouse-route')} tone="secondary">
+          <Button className="h-10 rounded-[10px] bg-[#fbf8f3] text-[13px] font-medium text-[#6b6359]" icon={<Map size={14} />} onClick={() => navigate(`/stops/${nextStop?.id ?? currentStop.id}`)} tone="secondary">
             Open Stop Details
           </Button>
           <Button className="h-10 rounded-[10px] bg-[#fbf8f3] text-[13px] font-medium text-[#6b6359]" icon={<SkipForward size={14} />} onClick={() => { skipStop(); navigate('/route') }} tone="secondary">
-            Skip This Stop
+            Skip Stop
           </Button>
-          <Button className="h-10 rounded-[10px] bg-[#fbf8f3] text-[13px] font-medium text-[#6b6359]" icon={<Shuffle size={14} />} onClick={() => { chooseManual(); navigate('/map') }} tone="secondary">
+          <Button className="h-10 rounded-[10px] bg-[#fbf8f3] text-[13px] font-medium text-[#6b6359]" icon={<Shuffle size={14} />} onClick={() => { chooseManual(); openMap(nextStop?.id ?? currentStop.id) }} tone="secondary">
             Choose Manually
           </Button>
-          <Button className="h-10 rounded-[10px] bg-[#fbf8f3] text-[13px] font-medium text-[#6b6359]" icon={<RefreshCw size={14} />} onClick={() => { chooseManual(); navigate('/map') }} tone="secondary">
-            Switch to Manual Mode
+          <Button className="h-10 rounded-[10px] bg-[#fbf8f3] text-[13px] font-medium text-[#6b6359]" icon={<RefreshCw size={14} />} onClick={() => { shortenRoute(); navigate('/route') }} tone="secondary">
+            Shorten Route
           </Button>
         </div>
-        <p className="mt-3 text-xs leading-[18px] text-[#8a7a63]">You can edit, skip, or swap any stop at any time. Manual mode is always available.</p>
       </div>
     </section>
   )
 }
 
 function RouteSequenceCard() {
-  const { setActiveStop } = useVisit()
+  const { setActiveStop, visit } = useVisit()
+  const navigate = useNavigate()
+  const routeStops = getRouteStops()
+  const currentIndex = Math.max(0, routeStops.findIndex((stop) => stop.id === visit.activeStopId))
+  const rows = sequenceRows.map((row) => {
+    const routeIndex = routeStops.findIndex((stop) => stop.id === row.id)
+    const completed = visit.visitedStopIds.includes(row.id) || routeIndex < currentIndex
+    const current = row.id === visit.activeStopId
+    const next = routeIndex === currentIndex + 1
+
+    return {
+      ...row,
+      completed,
+      current,
+      next,
+      status: current ? 'You are here' : next ? 'Next stop' : completed ? 'Completed' : 'Upcoming',
+      statusTone: current || next ? 'red' as const : completed ? 'green' as const : 'neutral' as const,
+      walkCue: current ? `${row.duration} here · next route step stays visible below` : undefined,
+    }
+  })
 
   return (
     <Panel className="p-6">
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-medium uppercase leading-4 tracking-[0.5px] text-[#8a7a63]">Route Sequence · 4 stops</p>
+          <p className="text-[11px] font-medium uppercase leading-4 tracking-[0.5px] text-[#8a7a63]">Route Sequence · {routeStops.length} stops</p>
           <p className="mt-1 text-[13px] leading-5 text-[#6b6359]">
-            <span className="text-[#3e7f74]">Visitor Center</span>
-            <span className="px-1.5 text-[#d6cdbb]">→</span>
-            <span className="font-semibold text-[#3e7f74]">Greenhouse Route</span>
-            <span className="px-1.5 text-[#d6cdbb]">→</span>
-            <span className="font-semibold text-[#c04a2b]">Tasting GH 1–2</span>
-            <span className="px-1.5 text-[#d6cdbb]">→</span>
-            Product Shop
+            {routeStops.map((stop, index) => (
+              <span key={stop.id}>
+                <span className={index < currentIndex ? 'text-[#3e7f74]' : index === currentIndex ? 'font-semibold text-[#3e7f74]' : index === currentIndex + 1 ? 'font-semibold text-[#c04a2b]' : undefined}>
+                  {stop.name}
+                </span>
+                {index < routeStops.length - 1 ? <span className="px-1.5 text-[#d6cdbb]">→</span> : null}
+              </span>
+            ))}
           </p>
         </div>
         <span className="text-xs leading-[18px] text-[#8a7a63]">Total walk ~10 min · 450 m</span>
       </div>
 
       <div>
-        {sequenceRows.map((row, index) => (
+        {rows.map((row, index) => (
           <div className={`grid gap-4 ${row.current ? 'min-h-[116px]' : 'min-h-[85px]'} grid-cols-[30px_minmax(0,1fr)]`} key={row.id}>
             <div className="flex flex-col items-center">
               <span
@@ -403,7 +437,10 @@ function RouteSequenceCard() {
                 </div>
                 <button
                   className="hidden h-[26px] shrink-0 items-center gap-1 rounded-full border border-[#e8e1d3] px-3 text-[11px] font-medium text-[#8a7a63] sm:inline-flex"
-                  onClick={() => setActiveStop(row.id)}
+                  onClick={() => {
+                    setActiveStop(row.id)
+                    navigate(`/stops/${row.id}`)
+                  }}
                   type="button"
                 >
                   Open
@@ -419,12 +456,11 @@ function RouteSequenceCard() {
         ))}
       </div>
 
-      <p className="mt-1 text-xs leading-[18px] text-[#8a7a63]">You can edit, skip, or swap any stop at any time. Manual mode is always available.</p>
     </Panel>
   )
 }
 
-function LiveRouteMapPanel() {
+export function LegacyLiveRouteMapPanel() {
   return (
     <Panel className="overflow-hidden">
       <div className="flex h-[55px] items-center justify-between border-b border-[#e8e1d3] px-[18px]">
@@ -562,6 +598,8 @@ function AIAdaptationPanel() {
 }
 
 function SelectionsSummary() {
+  const { visit } = useVisit()
+  const { openMap } = useMapOverlay()
   const rows = [
     ['Total duration', figmaLiveRoutePlan.duration],
     ['Stops', '4 main stops'],
@@ -583,7 +621,7 @@ function SelectionsSummary() {
         ))}
       </dl>
       <div className="grid gap-1.5 border-t border-[#e8e1d3] px-3.5 py-3">
-        <Link className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#e8e1d3] bg-[#fbf8f3] px-3 text-xs font-medium text-[#6b6359]" to="/map"><Map size={13} /> Open Map</Link>
+        <button className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#e8e1d3] bg-[#fbf8f3] px-3 text-left text-xs font-medium text-[#6b6359]" onClick={() => openMap(visit.activeStopId)} type="button"><Map size={13} /> Open Map</button>
         <Link className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#e8e1d3] bg-[#fbf8f3] px-3 text-xs font-medium text-[#6b6359]" to="/route"><List size={13} /> View All Stops</Link>
         <Link className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#e8e1d3] bg-[#fbf8f3] px-3 text-xs font-medium text-[#6b6359]" to="/help"><HelpCircle size={13} /> Help</Link>
       </div>
@@ -591,34 +629,40 @@ function SelectionsSummary() {
   )
 }
 
-function ControlAction({ description, icon, primary, title, to }: { description: string; icon: ReactNode; primary?: boolean; title: string; to: string }) {
-  return (
-    <Link
-      className={`flex min-h-[68px] gap-2.5 rounded-[12px] border p-[15px] ${
-        primary
-          ? 'border-[#f0c4b4] bg-[#fbe4dc] text-[#c04a2b]'
-          : 'border-[#e8e1d3] bg-[#fbf8f3] text-[#2a2420]'
-      }`}
-      to={to}
-    >
+function ControlAction({ icon, onClick, primary, title, to }: { icon: ReactNode; onClick?: () => void; primary?: boolean; title: string; to?: string }) {
+  const className = `flex min-h-[52px] items-center gap-2.5 rounded-[12px] border p-[15px] text-left ${
+    primary
+      ? 'border-[#f0c4b4] bg-[#fbe4dc] text-[#c04a2b]'
+      : 'border-[#e8e1d3] bg-[#fbf8f3] text-[#2a2420]'
+  }`
+  const content = (
+    <>
       <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${primary ? 'bg-[#fbe4dc]' : 'bg-[#f2ede4]'}`}>{icon}</span>
       <span>
         <span className="block text-[13px] font-medium leading-5">{title}</span>
-        <span className={`block text-xs font-medium leading-[18px] ${primary ? 'text-[#a03a1e]' : 'text-[#8a7a63]'}`}>{description}</span>
       </span>
-    </Link>
+    </>
   )
+
+  if (onClick) {
+    return <button className={className} onClick={onClick} type="button">{content}</button>
+  }
+
+  return <Link className={className} to={to ?? '/route'}>{content}</Link>
 }
 
 function ControlPanel() {
+  const { chooseManual, visit } = useVisit()
+  const { openMap } = useMapOverlay()
+
   return (
     <Panel className="p-5">
       <p className="mb-3 text-[11px] font-semibold uppercase leading-4 tracking-[0.4px] text-[#8a7a63]">Your Control · Adjust or replace this route</p>
       <div className="grid gap-2.5 md:grid-cols-2">
-        <ControlAction description="Revisit your selections" icon={<Pencil size={14} />} primary title="Edit Preferences" to="/planner" />
-        <ControlAction description="View full farm map" icon={<Map size={14} />} title="Open Map" to="/map" />
-        <ControlAction description="Build your own route" icon={<Shuffle size={14} />} title="Choose Manually" to="/map" />
-        <ControlAction description="Try a different path" icon={<RefreshCw size={14} />} title="Alternative Route" to="/recommended" />
+        <ControlAction icon={<Pencil size={14} />} primary title="Edit Preferences" to="/planner" />
+        <ControlAction icon={<Map size={14} />} onClick={() => openMap(visit.activeStopId)} title="Open Map" />
+        <ControlAction icon={<Shuffle size={14} />} onClick={() => { chooseManual(); openMap(visit.activeStopId) }} title="Choose Manually" />
+        <ControlAction icon={<RefreshCw size={14} />} title="Alternative Route" to="/recommended" />
       </div>
     </Panel>
   )
@@ -626,6 +670,7 @@ function ControlPanel() {
 
 export function LiveRouteFigmaPanels() {
   const { visit } = useVisit()
+  const { openMap } = useMapOverlay()
 
   if (visit.activeStopId !== 'greenhouse-route' && !getNextStopId(visit.activeStopId)) {
     return null
@@ -641,10 +686,21 @@ export function LiveRouteFigmaPanels() {
         <ControlPanel />
       </div>
       <aside className="space-y-5">
-        <LiveRouteMapPanel />
+        <UnifiedFarmMap
+          activeStopId={visit.activeStopId}
+          onOpenMap={() => openMap(visit.activeStopId)}
+          showControls={false}
+          showLegend={false}
+          showSafetyNote={false}
+          statusLabel="Stop 3 of 5"
+          title="Route Map"
+          variant="compact"
+        />
         <NearbyStopsPanel />
-        <AIAdaptationPanel />
-        <SelectionsSummary />
+        <div className="hidden">
+          <AIAdaptationPanel />
+          <SelectionsSummary />
+        </div>
       </aside>
     </div>
   )
