@@ -104,20 +104,20 @@ export function HomePage() {
 
   return (
     <PageShell className="pb-0 pt-0">
-      <section className="px-0 pt-10 md:px-8 md:pt-14">
-        <div className="grid min-h-[604px] gap-10 lg:grid-cols-[minmax(0,693px)_483px]">
+      <section className="px-0 pt-7 md:px-8 md:pt-14">
+        <div className="grid gap-8 lg:min-h-[604px] lg:grid-cols-[minmax(0,693px)_483px] lg:gap-10">
           <div className="pt-0 lg:pt-[77px]">
             <span className="inline-flex h-[30px] items-center gap-2 rounded-full border border-[var(--soft-border)] bg-[var(--cream-100)] px-3 text-xs leading-4 text-[#8a5a2b]">
               <MapPin size={14} />
               Prigan Pepper Farm · Northern Israel
             </span>
-            <h1 className="mt-6 max-w-[560px] text-[42px] font-medium leading-[1.1] text-[var(--ink)] md:text-[44px]">
+            <h1 className="mt-5 max-w-[560px] text-[34px] font-medium leading-[1.08] text-[var(--ink)] md:mt-6 md:text-[44px]">
               Explore the farm with a route that fits your visit
             </h1>
-            <p className="mt-5 max-w-[520px] text-[17px] leading-[1.625] text-[var(--muted)]">
+            <p className="mt-4 max-w-[520px] text-base leading-[1.55] text-[var(--muted)] md:mt-5 md:text-[17px] md:leading-[1.625]">
               Get a clear path, learn about pepper varieties, and adjust your route anytime.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-6 grid gap-3 sm:flex sm:flex-wrap md:mt-8">
               <Link
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-[14px] border border-[var(--terracotta)] bg-[var(--terracotta)] px-4 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--terracotta-dark)]"
                 to="/planner"
@@ -146,8 +146,8 @@ export function HomePage() {
             </div>
           </div>
 
-          <div className="relative mx-auto w-full max-w-[483px] pb-5 lg:mx-0 lg:pb-0">
-            <div className="relative h-[604px] overflow-hidden rounded-[24px] border border-[var(--soft-border)] shadow-[0_30px_60px_-30px_rgba(138,90,43,0.35)]">
+          <div className="relative mx-auto w-full max-w-[483px] pb-8 lg:mx-0 lg:pb-0">
+            <div className="relative h-[360px] overflow-hidden rounded-[20px] border border-[var(--soft-border)] shadow-[0_30px_60px_-30px_rgba(138,90,43,0.35)] sm:h-[460px] lg:h-[604px] lg:rounded-[24px]">
               <img alt="Colorful peppers from Prigan farm" className="absolute inset-0 h-full w-full object-cover" src={homeHeroPeppers} />
               <div className="absolute inset-0 bg-gradient-to-t from-[#2a1d14]/40 via-transparent to-transparent" />
               <div className="absolute left-4 top-4 inline-flex h-7 items-center gap-2 rounded-full bg-white/95 px-3 text-xs leading-4 text-[var(--ink)] shadow-sm">
@@ -168,7 +168,7 @@ export function HomePage() {
                 </div>
               </div>
             </div>
-            <div className="absolute -bottom-5 left-3 flex h-[62px] items-center gap-3 rounded-2xl border border-[var(--soft-border)] bg-white px-4 shadow-[0_10px_15px_rgba(0,0,0,0.1),0_4px_6px_rgba(0,0,0,0.1)] lg:bottom-0 lg:left-[-20px]">
+            <div className="absolute bottom-0 left-3 right-3 flex min-h-[62px] items-center gap-3 rounded-2xl border border-[var(--soft-border)] bg-white px-4 py-3 shadow-[0_10px_15px_rgba(0,0,0,0.1),0_4px_6px_rgba(0,0,0,0.1)] lg:bottom-0 lg:left-[-20px] lg:right-auto">
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#fdf5e4] text-[#c57a2d]">
                 <Sparkles size={16} />
               </span>

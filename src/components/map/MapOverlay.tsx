@@ -108,7 +108,7 @@ export function MapOverlay() {
 
   return (
     <div aria-labelledby="farm-map-overlay-title" aria-modal="true" className="fixed inset-0 z-[90] flex items-end bg-[#1f1b17]/45 p-0 backdrop-blur-sm md:items-center md:p-6" role="dialog">
-      <button aria-label="Close map" className="absolute inset-0 h-full w-full cursor-default" onClick={closeMap} type="button" />
+      <button aria-hidden="true" className="absolute inset-0 h-full w-full cursor-default" onClick={closeMap} tabIndex={-1} type="button" />
       <section className="relative mx-auto flex max-h-[96vh] w-full max-w-[1180px] flex-col overflow-hidden rounded-t-[24px] border border-[#e8e1d3] bg-[#fbf8f3] shadow-[0_24px_60px_rgba(42,36,32,0.28)] md:rounded-[24px]">
         <header className="flex min-h-[70px] items-center justify-between gap-3 border-b border-[#e8e1d3] bg-white px-4 py-3 md:px-6">
           <div className="min-w-0">
@@ -117,7 +117,7 @@ export function MapOverlay() {
           </div>
           <div className="flex items-center gap-2">
             <StopStatusPill label={`Stop ${activeIndex + 1} of ${routeStops.length}`} tone="current" />
-            <button className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#e8e1d3] bg-white text-[#6b6359] transition hover:bg-[#fbf8f3] hover:text-[#2a2420]" onClick={closeMap} type="button">
+            <button aria-label="Close map" className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#e8e1d3] bg-white text-[#6b6359] transition hover:bg-[#fbf8f3] hover:text-[#2a2420]" onClick={closeMap} type="button">
               <X size={18} />
             </button>
           </div>

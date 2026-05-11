@@ -49,19 +49,19 @@ export function LiveRoutePage() {
   }
 
   return (
-    <PageShell className="py-7 md:py-8">
+    <PageShell className="py-5 md:py-8">
       <div className="mx-auto max-w-[1120px] space-y-5">
-        <section className="rounded-[16px] border border-[#e8e1d3] bg-white p-5 shadow-[0_10px_24px_rgba(74,51,29,0.05)]">
+        <section className="rounded-[16px] border border-[#e8e1d3] bg-white p-4 shadow-[0_10px_24px_rgba(74,51,29,0.05)] md:p-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--terracotta)]">Live Route</p>
-              <h1 className="mt-1 text-[28px] font-semibold leading-9 text-[var(--ink)]">Follow your visit</h1>
+              <h1 className="mt-1 text-[24px] font-semibold leading-8 text-[var(--ink)] md:text-[28px] md:leading-9">Follow your visit</h1>
               <p className="mt-2 max-w-[620px] text-sm leading-6 text-[#6b6359]">
                 You are at {currentStop.name}. Continue when ready, or open the map to reorient.
               </p>
             </div>
             <button
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-[#e8e1d3] bg-white px-4 text-sm font-semibold text-[#2a2420] hover:bg-[#fbf8f3]"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] border border-[#e8e1d3] bg-white px-4 text-sm font-semibold text-[#2a2420] hover:bg-[#fbf8f3] md:h-10"
               onClick={() => openMap(currentStop.id)}
               type="button"
             >
@@ -81,11 +81,11 @@ export function LiveRoutePage() {
           </div>
         </section>
 
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <main className="space-y-5">
+        <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <main className="min-w-0 space-y-5">
             <section className="overflow-hidden rounded-[16px] border border-[#e8e1d3] bg-white shadow-[0_10px_24px_rgba(74,51,29,0.05)]">
-              <img alt={`${currentStop.name} stop`} className="h-[260px] w-full object-cover" src={routeImages[currentStop.id]} />
-              <div className="p-5">
+              <img alt={`${currentStop.name} stop`} className="h-[190px] w-full object-cover sm:h-[240px] md:h-[260px]" src={routeImages[currentStop.id]} />
+              <div className="p-4 md:p-5">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="rounded-full border border-[#f0c4b4] bg-[#fbe4dc] px-3 py-1 text-xs font-semibold text-[var(--terracotta)]">You are here</span>
                   <span className="rounded-full border border-[#d8e3cf] bg-[#f4f8ed] px-3 py-1 text-xs font-semibold text-[#55743a]">{currentStop.durationMinutes} min</span>
@@ -131,7 +131,7 @@ export function LiveRoutePage() {
                     Details
                   </Link>
                   <button
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-[#e8e1d3] bg-white px-4 text-xs font-semibold text-[#6b6359] hover:bg-[#fbf8f3]"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] border border-[#e8e1d3] bg-white px-4 text-xs font-semibold text-[#6b6359] hover:bg-[#fbf8f3] sm:h-10"
                     onClick={skipCurrentStop}
                     type="button"
                   >
@@ -139,7 +139,7 @@ export function LiveRoutePage() {
                     Skip
                   </button>
                   <button
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-[#e8e1d3] bg-white px-4 text-xs font-semibold text-[#6b6359] hover:bg-[#fbf8f3]"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] border border-[#e8e1d3] bg-white px-4 text-xs font-semibold text-[#6b6359] hover:bg-[#fbf8f3] sm:h-10"
                     onClick={shortenCurrentRoute}
                     type="button"
                   >
@@ -151,7 +151,7 @@ export function LiveRoutePage() {
             </section>
           </main>
 
-          <aside className="space-y-4">
+          <aside className="min-w-0 space-y-4">
             <UnifiedFarmMap
               activeStopId={currentStop.id}
               onOpenMap={() => openMap(currentStop.id)}

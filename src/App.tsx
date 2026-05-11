@@ -31,10 +31,29 @@ function SpaRedirectHandler() {
   return null
 }
 
+function ScrollToTop() {
+  const location = useLocation()
+
+  useEffect(() => {
+    const scrollToTop = () => window.scrollTo({ left: 0, top: 0 })
+    scrollToTop()
+    const frame = window.requestAnimationFrame(scrollToTop)
+    const timer = window.setTimeout(scrollToTop, 100)
+
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.clearTimeout(timer)
+    }
+  }, [location.pathname])
+
+  return null
+}
+
 function App() {
   return (
     <>
       <SpaRedirectHandler />
+      <ScrollToTop />
       <Routes>
         <Route element={<AppLayout />}>
           <Route path="/" element={<HomePage />} />

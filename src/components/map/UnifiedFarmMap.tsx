@@ -70,7 +70,7 @@ export function UnifiedFarmMap({
         </div>
       ) : null}
 
-      <div className={cn('bg-[#f6efe1]', isCompact ? 'p-2' : 'p-3')}>
+      <div className={cn('bg-[#f6efe1]', isCompact ? 'p-1.5 sm:p-2' : 'p-2 sm:p-3')}>
         <div className="relative">
           <DynamicFarmMapCanvas
             activeStopId={activeStopId}
@@ -82,7 +82,7 @@ export function UnifiedFarmMap({
             onOpenMap ? (
               <button
                 aria-label="Open full farm map"
-                className="absolute right-3 top-3 inline-flex h-8 items-center gap-1.5 rounded-[10px] border border-[#e8e1d3] bg-white/95 px-3 text-[11px] font-semibold text-[#c04a2b] shadow-sm hover:bg-white"
+                className="absolute right-2 top-2 inline-flex h-8 items-center gap-1.5 rounded-[10px] border border-[#e8e1d3] bg-white/95 px-2.5 text-[11px] font-semibold text-[#c04a2b] shadow-sm hover:bg-white sm:right-3 sm:top-3 sm:px-3"
                 onClick={onOpenMap}
                 type="button"
               >
@@ -92,7 +92,7 @@ export function UnifiedFarmMap({
             ) : (
               <Link
                 aria-label="Open full farm map"
-                className="absolute right-3 top-3 inline-flex h-8 items-center gap-1.5 rounded-[10px] border border-[#e8e1d3] bg-white/95 px-3 text-[11px] font-semibold text-[#c04a2b] shadow-sm hover:bg-white"
+                className="absolute right-2 top-2 inline-flex h-8 items-center gap-1.5 rounded-[10px] border border-[#e8e1d3] bg-white/95 px-2.5 text-[11px] font-semibold text-[#c04a2b] shadow-sm hover:bg-white sm:right-3 sm:top-3 sm:px-3"
                 to="/map"
               >
                 <Map size={13} />
@@ -103,7 +103,7 @@ export function UnifiedFarmMap({
           {showControls && !isCompact ? (
             <Link
               aria-label="Open route list view"
-              className="absolute bottom-[14px] right-[14px] inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#e8e1d3] bg-white/95 px-3 text-xs font-medium text-[#2a2420] shadow-sm hover:bg-white"
+              className="absolute bottom-2 right-2 inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#e8e1d3] bg-white/95 px-3 text-xs font-medium text-[#2a2420] shadow-sm hover:bg-white sm:bottom-[14px] sm:right-[14px]"
               title="List view"
               to="/route"
             >

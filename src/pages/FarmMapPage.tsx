@@ -199,7 +199,7 @@ function ActionButtons({
           Open Stop Details
         </Link>
         <button
-          className="inline-flex h-9 items-center justify-center gap-2 rounded-[8px] border border-[#e8e1d3] bg-white text-xs font-medium text-[#2a2420] hover:bg-[#fbf7f0]"
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-[8px] border border-[#e8e1d3] bg-white text-xs font-medium text-[#2a2420] hover:bg-[#fbf7f0] sm:h-9"
           onClick={onSkip}
           type="button"
         >
@@ -249,7 +249,7 @@ function SelectedMapStopCard({
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
         {isRouteStop ? (
           <button
-            className="inline-flex h-9 items-center justify-center rounded-[8px] border border-[#f0c4b4] bg-[#fff7f4] text-xs font-semibold text-[#c04a2b] hover:bg-[#fff1ed] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-10 items-center justify-center rounded-[8px] border border-[#f0c4b4] bg-[#fff7f4] text-xs font-semibold text-[#c04a2b] hover:bg-[#fff1ed] disabled:cursor-not-allowed disabled:opacity-50 sm:h-9"
             disabled={!canRemove}
             onClick={() => removeStopFromRoute(stop.id)}
             type="button"
@@ -258,7 +258,7 @@ function SelectedMapStopCard({
           </button>
         ) : (
           <button
-            className="inline-flex h-9 items-center justify-center rounded-[8px] border border-[#c04a2b] bg-[#c04a2b] text-xs font-semibold text-white hover:bg-[#a63d23]"
+            className="inline-flex h-10 items-center justify-center rounded-[8px] border border-[#c04a2b] bg-[#c04a2b] text-xs font-semibold text-white hover:bg-[#a63d23] sm:h-9"
             onClick={() => addStopToRoute(stop.id)}
             type="button"
           >
@@ -266,14 +266,14 @@ function SelectedMapStopCard({
           </button>
         )}
         <button
-          className="inline-flex h-9 items-center justify-center rounded-[8px] border border-[#e8e1d3] bg-white text-xs font-medium text-[#2a2420] hover:bg-[#fbf7f0]"
+          className="inline-flex h-10 items-center justify-center rounded-[8px] border border-[#e8e1d3] bg-white text-xs font-medium text-[#2a2420] hover:bg-[#fbf7f0] sm:h-9"
           onClick={onOpen}
           type="button"
         >
           Open Details
         </button>
         <button
-          className="inline-flex h-9 items-center justify-center rounded-[8px] border border-[#e8e1d3] bg-white text-xs font-medium text-[#2a2420] hover:bg-[#fbf7f0]"
+          className="inline-flex h-10 items-center justify-center rounded-[8px] border border-[#e8e1d3] bg-white text-xs font-medium text-[#2a2420] hover:bg-[#fbf7f0] sm:h-9"
           onClick={onClear}
           type="button"
         >
@@ -386,9 +386,9 @@ export function FarmMapPage() {
   }
 
   return (
-    <PageShell className="py-8 md:py-7">
-      <div className="mx-auto grid max-w-[1180px] gap-6 lg:grid-cols-[minmax(0,746px)_minmax(320px,361px)]">
-        <section>
+    <PageShell className="py-5 md:py-7">
+      <div className="mx-auto grid max-w-[1180px] min-w-0 gap-5 lg:grid-cols-[minmax(0,746px)_minmax(320px,361px)] lg:gap-6">
+        <section className="min-w-0">
           <SectionLabel>Farm Map · Stop {activeIndex + 1} of {routeStops.length}</SectionLabel>
           <h1 className="mt-1 text-[22px] font-semibold leading-[33px] text-[#2a2420]">Farm Map</h1>
           <p className="mt-1 text-[13px] leading-[19.5px] text-[#6b6359]">See your route, nearby stops, and tasting points across the farm.</p>
@@ -397,7 +397,7 @@ export function FarmMapPage() {
           </div>
         </section>
 
-        <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
+        <aside className="min-w-0 space-y-5 lg:sticky lg:top-24 lg:self-start">
           <NextStopCard nextStop={nextStop} nextStopIndex={nextStopIndex} totalStops={routeStops.length} />
           <SelectedMapStopCard onClear={() => setSelectedMapStopId(null)} onOpen={openSelectedMapStop} stopId={selectedMapStopId} />
           <ActionButtons nextStop={nextStop} onContinue={continueRoute} onSkip={skipCurrentStop} />

@@ -1,4 +1,4 @@
-import { Globe2, HelpCircle, Sprout } from 'lucide-react'
+import { BookOpen, ClipboardList, Globe2, HelpCircle, Home, Route, Sprout, UserRound } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { getRouteStops } from '../../data/helpers'
 import { useVisit } from '../../hooks/useVisit'
@@ -6,17 +6,18 @@ import { MapOverlay } from '../map/MapOverlay'
 import { MapOverlayProvider } from '../map/MapOverlayContext'
 
 type NavItem = {
+  icon: typeof Home
   to: string
   label: string
   badge?: number
 }
 
 const navItems: NavItem[] = [
-  { to: '/', label: 'Home' },
-  { to: '/planner', label: 'Plan Visit' },
-  { to: '/route', label: 'Route' },
-  { to: '/catalog', label: 'Catalog' },
-  { to: '/my-visit', label: 'My Visit' },
+  { icon: Home, to: '/', label: 'Home' },
+  { icon: ClipboardList, to: '/planner', label: 'Plan Visit' },
+  { icon: Route, to: '/route', label: 'Route' },
+  { icon: BookOpen, to: '/catalog', label: 'Catalog' },
+  { icon: UserRound, to: '/my-visit', label: 'My Visit' },
 ]
 
 function isRoutePath(pathname: string) {
@@ -55,15 +56,15 @@ export function AppLayout() {
 
   return (
     <MapOverlayProvider>
-      <div className="app-shell">
+      <div className="app-shell pb-20 md:pb-0">
         <header className="sticky top-0 z-40 border-b border-[var(--soft-border)] bg-[rgba(255,255,255,0.96)] backdrop-blur">
           <div className="page-band">
-            <div className="flex h-16 items-center justify-between gap-4 px-0 md:px-8">
+            <div className="flex h-14 items-center justify-between gap-3 px-0 md:h-16 md:px-8">
               <NavLink className="flex items-center gap-2.5 text-base font-normal text-[var(--ink)]" to="/">
                 <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[var(--terracotta)] text-white">
                   <Sprout size={18} />
                 </span>
-                Prigan Guide
+                <span className="whitespace-nowrap">Prigan Guide</span>
               </NavLink>
 
               <nav className="hidden items-center gap-1 text-sm md:flex">
@@ -131,6 +132,40 @@ export function AppLayout() {
             </div>
           </div>
         </footer>
+
+        <nav aria-label="Primary mobile navigation" className="fixed inset-x-0 bottom-0 z-50 border-t border-[#e8e1d3] bg-white/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-10px_24px_rgba(74,51,29,0.08)] backdrop-blur md:hidden">
+          <div className="mx-auto grid max-w-[430px] grid-cols-5 gap-1">
+            {navigation.map((item) => {
+              const Icon = item.icon
+              const routeActive = item.to === '/route' && isRoutePath(location.pathname)
+              const catalogActive = item.to === '/catalog' && isCatalogPath(location.pathname)
+
+              return (
+                <NavLink
+                  className={({ isActive }) => {
+                    const active = isActive || routeActive || catalogActive
+
+                    return `relative flex min-h-[54px] flex-col items-center justify-center gap-1 rounded-[14px] px-1 text-[10px] font-semibold leading-3 transition ${
+                      active
+                        ? 'bg-[#fbe4dc] text-[var(--terracotta)]'
+                        : 'text-[#7a6a59] hover:bg-[#fbf7f0] hover:text-[var(--ink)]'
+                    }`
+                  }}
+                  key={item.to}
+                  to={item.to}
+                >
+                  <Icon size={18} />
+                  <span className="max-w-full truncate">{item.label === 'Plan Visit' ? 'Plan' : item.label === 'My Visit' ? 'Visit' : item.label}</span>
+                  {item.badge && item.badge > 0 ? (
+                    <span className="absolute right-2 top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--terracotta)] px-1 text-[10px] font-bold text-white">
+                      {item.badge}
+                    </span>
+                  ) : null}
+                </NavLink>
+              )
+            })}
+          </div>
+        </nav>
       </div>
       <MapOverlay />
     </MapOverlayProvider>

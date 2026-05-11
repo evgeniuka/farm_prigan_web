@@ -147,10 +147,10 @@ export function DynamicFarmMapCanvas({
     .filter((entry): entry is { point: StopPoint; stop: Stop } => Boolean(entry.point))
 
   return (
-    <div className={cn('relative overflow-x-auto rounded-[14px] bg-[#f6efe1]', className)}>
+    <div className={cn('relative overflow-hidden rounded-[14px] bg-[#f6efe1]', className)}>
       <svg
         aria-label={`Schematic farm map. Current stop is ${activeStop.name}.`}
-        className="block h-auto min-w-[721px] max-w-none sm:min-w-0 sm:w-full"
+        className="block h-auto w-full min-w-0"
         role="img"
         viewBox="0 0 721 460"
       >
@@ -439,7 +439,7 @@ export function DynamicFarmMapCanvas({
       </svg>
 
       {onStopSelect ? (
-        <div className="pointer-events-none absolute inset-0 min-w-[721px] sm:min-w-0">
+        <div className="pointer-events-none absolute inset-0">
           {routeStops.map((stop, index) => {
             const position = overlayButtonPositions[stop.id]
             const isActive = stop.id === activeStopId

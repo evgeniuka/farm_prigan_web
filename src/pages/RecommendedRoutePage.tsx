@@ -105,13 +105,13 @@ function RouteSummaryHero({
   const firstStop = routeStops[0]
 
   return (
-    <section className="rounded-[18px] border border-[#e8e1d3] bg-white p-6">
+    <section className="rounded-[18px] border border-[#e8e1d3] bg-white p-4 md:p-6">
       <p className="text-[11px] font-medium uppercase leading-4 tracking-[0.6px] text-[var(--terracotta)]">
         {isStaticMode ? 'Static Route Baseline' : isCustomRoute ? 'Manual Route' : 'AI - Recommended Route'}
       </p>
       <div className="mt-4 flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h1 className="text-[26px] font-semibold leading-[31px] text-[#2a2420]">{isStaticMode ? 'Static Visitor Route' : routeName}</h1>
+        <div className="min-w-0">
+          <h1 className="text-[24px] font-semibold leading-[29px] text-[#2a2420] md:text-[26px] md:leading-[31px]">{isStaticMode ? 'Static Visitor Route' : routeName}</h1>
           <p className="mt-1.5 max-w-[460px] text-sm leading-[22px] text-[#6b6359]">
             {isStaticMode
               ? 'A fixed visitor route for research comparison. You can still open the map or switch to manual choices.'
@@ -120,7 +120,7 @@ function RouteSummaryHero({
               : 'Built from your time, visit mode, and spice comfort. You can edit or override any part.'}
           </p>
         </div>
-        <div className="w-[104px] rounded-[14px] border border-[#b4d4cb] bg-[#e8f2ef] px-4 py-2 text-center">
+        <div className="w-full rounded-[14px] border border-[#b4d4cb] bg-[#e8f2ef] px-4 py-2 text-left sm:w-[104px] sm:text-center">
           <p className="text-[22px] font-bold leading-[22px] text-[#2a6b61]">High</p>
           <p className="mt-0.5 text-[10px] font-medium uppercase leading-[15px] tracking-[0.3px] text-[#3e7f74]">Route fit</p>
           <FitDots />
@@ -141,7 +141,7 @@ function RouteSummaryHero({
           <span className="block text-sm font-semibold leading-[21px] text-[#2a2420]">{firstStop.name}</span>
         </span>
         <button
-          className="inline-flex h-[26px] shrink-0 items-center justify-center gap-1.5 rounded-full bg-[var(--terracotta)] px-3 text-xs font-semibold text-white"
+          className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-[10px] bg-[var(--terracotta)] px-3 text-xs font-semibold text-white sm:h-[26px] sm:rounded-full"
           onClick={onAccept}
           type="button"
         >
@@ -155,7 +155,7 @@ function RouteSummaryHero({
 
 function WhyThisRoute({ chips }: { chips: string[] }) {
   return (
-    <section className="rounded-[18px] border border-[#b4d4cb] bg-[#e8f2ef] p-5">
+    <section className="rounded-[18px] border border-[#b4d4cb] bg-[#e8f2ef] p-4 md:p-5">
       <div className="flex gap-3">
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-[#3e7f74] text-white">
           <Sparkles size={15} />
@@ -163,7 +163,7 @@ function WhyThisRoute({ chips }: { chips: string[] }) {
         <div className="min-w-0 flex-1">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-sm font-semibold leading-[21px] text-[#2a2420]">Why this route?</h2>
-            <Link className="inline-flex h-7 w-fit items-center rounded-full border border-[#b4d4cb] px-3 text-xs font-medium text-[#3e7f74]" to="/ai">
+            <Link className="inline-flex h-8 w-fit items-center rounded-full border border-[#b4d4cb] px-3 text-xs font-medium text-[#3e7f74]" to="/ai">
               Full explanation
             </Link>
           </div>
@@ -183,7 +183,7 @@ function WhyThisRoute({ chips }: { chips: string[] }) {
 
 function StaticRouteBaseline() {
   return (
-    <section className="rounded-[18px] border border-[#d6cdbb] bg-[#f4f0e8] p-5">
+    <section className="rounded-[18px] border border-[#d6cdbb] bg-[#f4f0e8] p-4 md:p-5">
       <div className="flex gap-3">
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-[#8a7a63] text-white">
           <Info size={15} />
@@ -254,14 +254,16 @@ function StopCard({
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="inline-flex items-center gap-1 text-[11px] leading-4 text-[#8a7a63]"><Clock3 size={13} /> {stop.durationMinutes} min</span>
                   <Link
-                    className="inline-flex h-[27px] items-center gap-1 rounded-full border border-[#f0c4b4] bg-white px-3 text-[11px] font-medium text-[var(--terracotta)]"
+                    aria-label={`Open ${stop.name} details`}
+                    className="inline-flex h-8 items-center gap-1 rounded-full border border-[#f0c4b4] bg-white px-3 text-[11px] font-medium text-[var(--terracotta)] sm:h-[27px]"
                     to={`/stops/${stop.id}`}
                   >
                     <Eye size={13} />
                     Open Stop
                   </Link>
                   <button
-                    className="inline-flex h-[27px] items-center gap-1 rounded-full border border-[#e8e1d3] bg-white px-3 text-[11px] font-medium text-[#6b6359]"
+                    aria-label={`Open map focused on ${stop.name}`}
+                    className="inline-flex h-8 items-center gap-1 rounded-full border border-[#e8e1d3] bg-white px-3 text-[11px] font-medium text-[#6b6359] sm:h-[27px]"
                     onClick={() => onManual(stop.id)}
                     type="button"
                   >
@@ -270,7 +272,8 @@ function StopCard({
                   </button>
                   {canRemove ? (
                     <button
-                      className="inline-flex h-[27px] items-center gap-1 rounded-full border border-[#f0c4b4] bg-[#fff7f4] px-3 text-[11px] font-semibold text-[var(--terracotta)]"
+                      aria-label={`Remove ${stop.name} from route`}
+                      className="inline-flex h-8 items-center gap-1 rounded-full border border-[#f0c4b4] bg-[#fff7f4] px-3 text-[11px] font-semibold text-[var(--terracotta)] sm:h-[27px]"
                       onClick={() => onRemove(stop.id)}
                       type="button"
                     >
@@ -301,11 +304,11 @@ function RouteSequence({ onManual, onRemove, routeStops }: { onManual: (stopId: 
   const routeLabel = routeStops.map((stop) => stop.shortName).join(' -> ')
 
   return (
-    <section className="rounded-[18px] border border-[#e8e1d3] bg-white p-6">
+    <section className="rounded-[18px] border border-[#e8e1d3] bg-white p-4 md:p-6">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-[11px] font-medium uppercase leading-4 tracking-[0.6px] text-[var(--terracotta)]">Route Sequence - {routeStops.length} Stops</p>
-          <h2 className="mt-0.5 text-sm font-semibold leading-[21px] text-[#2a2420]">{routeLabel}</h2>
+          <h2 className="mt-0.5 break-words text-sm font-semibold leading-[21px] text-[#2a2420]">{routeLabel}</h2>
         </div>
         <div className="text-left sm:text-right">
           <p className="text-[10px] uppercase leading-[15px] tracking-[0.5px] text-[#8a7a63]">Total walk</p>
@@ -323,7 +326,7 @@ function RouteSequence({ onManual, onRemove, routeStops }: { onManual: (stopId: 
 
 function DetourStops({ onAdd, stops }: { onAdd: (stopId: string) => void; stops: Stop[] }) {
   return (
-    <section className="rounded-[18px] border border-[#e8e1d3] bg-white p-5">
+    <section className="rounded-[18px] border border-[#e8e1d3] bg-white p-4 md:p-5">
       <div className="mb-4">
         <p className="text-[11px] font-medium uppercase leading-4 tracking-[0.6px] text-[var(--terracotta)]">Available stops</p>
         <h2 className="mt-0.5 text-base font-semibold leading-6 text-[#2a2420]">Add a stop if you want</h2>
@@ -331,20 +334,21 @@ function DetourStops({ onAdd, stops }: { onAdd: (stopId: string) => void; stops:
 
       <div className="grid gap-2 md:grid-cols-2">
         {stops.map((stop) => (
-          <article className="flex items-center gap-3 rounded-[12px] border border-[#e8e1d3] bg-[#fbf8f3] p-3" key={stop.id}>
+          <article className="grid gap-3 rounded-[12px] border border-[#e8e1d3] bg-[#fbf8f3] p-3 sm:flex sm:items-center" key={stop.id}>
             <div className="min-w-0 flex-1">
               <h3 className="truncate text-sm font-semibold leading-5 text-[#2a2420]">{stop.name}</h3>
               <p className="mt-0.5 text-xs leading-[18px] text-[#6b6359]">+{stop.durationMinutes} min - {stop.type}</p>
             </div>
             <button
-              className="inline-flex h-8 shrink-0 items-center rounded-full bg-[var(--terracotta)] px-3 text-[11px] font-semibold text-white"
+              aria-label={`Add ${stop.name} to route`}
+              className="inline-flex h-10 shrink-0 items-center justify-center rounded-[10px] bg-[var(--terracotta)] px-3 text-[11px] font-semibold text-white sm:h-8 sm:rounded-full"
               onClick={() => onAdd(stop.id)}
               type="button"
             >
               <Plus className="mr-1" size={12} />
               Add stop
             </button>
-            <Link className="inline-flex h-8 shrink-0 items-center rounded-full border border-[#d6cdbb] bg-white px-3 text-[11px] font-semibold text-[#6b6359]" to={`/stops/${stop.id}`}>
+            <Link aria-label={`Open ${stop.name} details`} className="inline-flex h-10 shrink-0 items-center justify-center rounded-[10px] border border-[#d6cdbb] bg-white px-3 text-[11px] font-semibold text-[#6b6359] sm:h-8 sm:rounded-full" to={`/stops/${stop.id}`}>
               Details
             </Link>
           </article>
@@ -356,7 +360,7 @@ function DetourStops({ onAdd, stops }: { onAdd: (stopId: string) => void; stops:
 
 function RouteAlternatives({ onApply, onPreview }: { onApply: (routeId: string) => void; onPreview: (stopId: string) => void }) {
   return (
-    <section className="rounded-[18px] border border-[#c6ded8] bg-[#e8f2ef] p-6">
+    <section className="rounded-[18px] border border-[#c6ded8] bg-[#e8f2ef] p-4 md:p-6">
       <p className="text-[11px] font-medium uppercase leading-4 tracking-[0.6px] text-[#2f6d63]">Route alternatives</p>
       <h2 className="mt-1 text-base font-semibold leading-6 text-[#2a2420]">Other route options</h2>
       <div className="mt-4 grid gap-3 md:grid-cols-3">
@@ -372,6 +376,7 @@ function RouteAlternatives({ onApply, onPreview }: { onApply: (routeId: string) 
               <p className="mt-2 text-xs leading-[18px] text-[#2a2420]">{variant.bestFor}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
+                  aria-label={`Use ${variant.name}`}
                   className="inline-flex h-8 items-center rounded-full border border-[#b4d4cb] bg-[#2f6d63] px-3 text-[11px] font-semibold text-white"
                   onClick={() => onApply(variant.id)}
                   type="button"
@@ -379,6 +384,7 @@ function RouteAlternatives({ onApply, onPreview }: { onApply: (routeId: string) 
                   Use route
                 </button>
                 <button
+                  aria-label={`Preview ${previewStop.name}`}
                   className="inline-flex h-8 items-center rounded-full border border-[#b4d4cb] bg-[#e8f2ef] px-3 text-[11px] font-semibold text-[#2f6d63]"
                   onClick={() => onPreview(previewStop.id)}
                   type="button"
@@ -538,9 +544,9 @@ export function RecommendedRoutePage() {
   }
 
   return (
-    <PageShell className="bg-[#fbf8f3] py-8 md:px-8">
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,900px)_292px] lg:items-start">
-        <div className="space-y-4">
+    <PageShell className="bg-[#fbf8f3] py-5 md:px-8 md:py-8">
+      <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,900px)_292px] lg:items-start lg:gap-8">
+        <div className="min-w-0 space-y-4">
           <RouteSummaryHero isCustomRoute={isCustomRoute} isStaticMode={isStaticMode} onAccept={handleAccept} routeDurationMinutes={adaptiveRoute.durationMinutes} routeName={adaptiveRoute.name} routeStops={routeStops} visit={visit} />
           {isStaticMode ? <StaticRouteBaseline /> : <WhyThisRoute chips={whyChips} />}
           <RouteSequence onManual={handleManual} onRemove={handleRemoveStop} routeStops={routeStops} />

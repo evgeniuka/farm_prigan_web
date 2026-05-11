@@ -100,6 +100,7 @@ function SidebarPepper({
           View Details <ChevronRight size={11} />
         </Link>
         <button
+          aria-label={saved ? `Remove ${pepper.name} from My Visit` : `Save ${pepper.name} to My Visit`}
           className={cn(
             'inline-flex h-6 items-center gap-1 rounded-md border px-2 text-[11px] font-semibold',
             saved

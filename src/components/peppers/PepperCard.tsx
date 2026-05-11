@@ -123,6 +123,7 @@ export function PepperCard({
               <span className="truncate">{routeLabels[pepper.id]}</span>
             </span>
             <button
+              aria-label={`Open map for ${pepper.name}`}
               className="shrink-0 text-[11px] font-semibold text-[var(--terracotta)] hover:underline"
               onClick={() => openMap(pepper.routeStopId)}
               type="button"
@@ -140,6 +141,7 @@ export function PepperCard({
             View Details
           </Link>
           <button
+            aria-label={saved ? `Remove ${pepper.name} from My Visit` : `Save ${pepper.name} to My Visit`}
             className={cn(
               'inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-[12px] font-semibold transition',
               saved
